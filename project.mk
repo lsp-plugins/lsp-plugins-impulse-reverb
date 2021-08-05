@@ -24,7 +24,7 @@ ARTIFACT_NAME               = lsp-plugins-impulse-reverb
 ARTIFACT_DESC               = Trigger plugin series
 ARTIFACT_HEADERS            = lsp-plug.in
 ARTIFACT_EXPORT_ALL         = 1
-ARTIFACT_VERSION            = 1.0.5-devel
+ARTIFACT_VERSION            = 1.0.2-devel
 
 #------------------------------------------------------------------------------
 # List of all dependencies
