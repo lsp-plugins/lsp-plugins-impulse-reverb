@@ -21,7 +21,7 @@
 # Package version
 ARTIFACT_ID                 = LSP_PLUGINS_IMPULSE_REVERB
 ARTIFACT_NAME               = lsp-plugins-impulse-reverb
-ARTIFACT_DESC               = Trigger plugin series
+ARTIFACT_DESC               = Impulse Reverb plugin series
 ARTIFACT_HEADERS            = lsp-plug.in
 ARTIFACT_EXPORT_ALL         = 1
 ARTIFACT_VERSION            = 1.0.2-devel
