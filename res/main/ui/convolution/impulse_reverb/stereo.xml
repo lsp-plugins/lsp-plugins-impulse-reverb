@@ -27,8 +27,8 @@
 					<ui:with pad.h="6" pad.v="4">
 						<knob id="pl" pad.t="4" pad.b="4" scolor="left" size="16" ssize="3"/>
 						<knob id="pr" pad.t="4" pad.b="4" scolor="right" size="16" ssize="3"/>
-						<value id="pl" sline="true"/>
-						<value id="pr" sline="true"/>
+						<value id="pl" sline="true" width="38"/>
+						<value id="pr" sline="true" width="38"/>
 					</ui:with>
 
 					<cell cols="2">
