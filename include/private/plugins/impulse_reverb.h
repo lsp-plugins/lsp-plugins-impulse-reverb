@@ -219,7 +219,7 @@ namespace lsp
                 virtual ~impulse_reverb();
 
             public:
-                virtual void        init(plug::IWrapper *wrapper);
+                virtual void        init(plug::IWrapper *wrapper, plug::IPort **ports);
                 virtual void        destroy();
 
                 virtual void        ui_activated();

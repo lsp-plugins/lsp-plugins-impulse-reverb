@@ -217,10 +217,10 @@ namespace lsp
             return meta::impulse_reverb_metadata::FFT_RANK_MIN + rank;
         }
 
-        void impulse_reverb::init(plug::IWrapper *wrapper)
+        void impulse_reverb::init(plug::IWrapper *wrapper, plug::IPort **ports)
         {
             // Pass wrapper
-            plug::Module::init(wrapper);
+            plug::Module::init(wrapper, ports);
 
             // Remember executor service
             pExecutor       = wrapper->executor();
@@ -356,38 +356,38 @@ namespace lsp
             lsp_trace("Binding audio ports");
             for (size_t i=0; i<nInputs; ++i)
             {
-                TRACE_PORT(vPorts[port_id]);
-                vInputs[i].pIn      = vPorts[port_id++];
+                TRACE_PORT(ports[port_id]);
+                vInputs[i].pIn      = ports[port_id++];
             }
             for (size_t i=0; i<2; ++i)
             {
-                TRACE_PORT(vPorts[port_id]);
-                vChannels[i].pOut   = vPorts[port_id++];
+                TRACE_PORT(ports[port_id]);
+                vChannels[i].pOut   = ports[port_id++];
             }
 
             // Bind common ports
             lsp_trace("Binding common ports");
-            TRACE_PORT(vPorts[port_id]);
-            pBypass     = vPorts[port_id++];
-            TRACE_PORT(vPorts[port_id]);            // Skip file selector
+            TRACE_PORT(ports[port_id]);
+            pBypass     = ports[port_id++];
+            TRACE_PORT(ports[port_id]);            // Skip file selector
             port_id++;
-            TRACE_PORT(vPorts[port_id]);            // FFT rank
-            pRank       = vPorts[port_id++];
-            TRACE_PORT(vPorts[port_id]);            // Pre-delay
-            pPredelay   = vPorts[port_id++];
+            TRACE_PORT(ports[port_id]);            // FFT rank
+            pRank       = ports[port_id++];
+            TRACE_PORT(ports[port_id]);            // Pre-delay
+            pPredelay   = ports[port_id++];
 
             for (size_t i=0; i<nInputs; ++i)        // Panning ports
             {
-                TRACE_PORT(vPorts[port_id]);
-                vInputs[i].pPan     = vPorts[port_id++];
+                TRACE_PORT(ports[port_id]);
+                vInputs[i].pPan     = ports[port_id++];
             }
 
-            TRACE_PORT(vPorts[port_id]);
-            pDry        = vPorts[port_id++];
-            TRACE_PORT(vPorts[port_id]);
-            pWet        = vPorts[port_id++];
-            TRACE_PORT(vPorts[port_id]);
-            pOutGain    = vPorts[port_id++];
+            TRACE_PORT(ports[port_id]);
+            pDry        = ports[port_id++];
+            TRACE_PORT(ports[port_id]);
+            pWet        = ports[port_id++];
+            TRACE_PORT(ports[port_id]);
+            pOutGain    = ports[port_id++];
 
             // Bind impulse file ports
             for (size_t i=0; i<meta::impulse_reverb_metadata::FILES; ++i)
@@ -395,26 +395,26 @@ namespace lsp
                 lsp_trace("Binding impulse file #%d ports", int(i));
                 af_descriptor_t *f  = &vFiles[i];
 
-                TRACE_PORT(vPorts[port_id]);
-                f->pFile        = vPorts[port_id++];
-                TRACE_PORT(vPorts[port_id]);
-                f->pHeadCut     = vPorts[port_id++];
-                TRACE_PORT(vPorts[port_id]);
-                f->pTailCut     = vPorts[port_id++];
-                TRACE_PORT(vPorts[port_id]);
-                f->pFadeIn      = vPorts[port_id++];
-                TRACE_PORT(vPorts[port_id]);
-                f->pFadeOut     = vPorts[port_id++];
-                TRACE_PORT(vPorts[port_id]);
-                f->pListen      = vPorts[port_id++];
-                TRACE_PORT(vPorts[port_id]);
-                f->pReverse     = vPorts[port_id++];
-                TRACE_PORT(vPorts[port_id]);
-                f->pStatus      = vPorts[port_id++];
-                TRACE_PORT(vPorts[port_id]);
-                f->pLength      = vPorts[port_id++];
-                TRACE_PORT(vPorts[port_id]);
-                f->pThumbs      = vPorts[port_id++];
+                TRACE_PORT(ports[port_id]);
+                f->pFile        = ports[port_id++];
+                TRACE_PORT(ports[port_id]);
+                f->pHeadCut     = ports[port_id++];
+                TRACE_PORT(ports[port_id]);
+                f->pTailCut     = ports[port_id++];
+                TRACE_PORT(ports[port_id]);
+                f->pFadeIn      = ports[port_id++];
+                TRACE_PORT(ports[port_id]);
+                f->pFadeOut     = ports[port_id++];
+                TRACE_PORT(ports[port_id]);
+                f->pListen      = ports[port_id++];
+                TRACE_PORT(ports[port_id]);
+                f->pReverse     = ports[port_id++];
+                TRACE_PORT(ports[port_id]);
+                f->pStatus      = ports[port_id++];
+                TRACE_PORT(ports[port_id]);
+                f->pLength      = ports[port_id++];
+                TRACE_PORT(ports[port_id]);
+                f->pThumbs      = ports[port_id++];
             }
 
             // Bind convolver ports
@@ -425,24 +425,24 @@ namespace lsp
 
                 if (nInputs > 1)    // Input panning
                 {
-                    TRACE_PORT(vPorts[port_id]);
-                    c->pPanIn       = vPorts[port_id++];
+                    TRACE_PORT(ports[port_id]);
+                    c->pPanIn       = ports[port_id++];
                 }
 
-                TRACE_PORT(vPorts[port_id]);
-                c->pFile        = vPorts[port_id++];
-                TRACE_PORT(vPorts[port_id]);
-                c->pTrack       = vPorts[port_id++];
-                TRACE_PORT(vPorts[port_id]);
-                c->pMakeup      = vPorts[port_id++];
-                TRACE_PORT(vPorts[port_id]);
-                c->pMute        = vPorts[port_id++];
-                TRACE_PORT(vPorts[port_id]);
-                c->pActivity    = vPorts[port_id++];
-                TRACE_PORT(vPorts[port_id]);
-                c->pPredelay    = vPorts[port_id++];
-                TRACE_PORT(vPorts[port_id]);
-                c->pPanOut      = vPorts[port_id++];
+                TRACE_PORT(ports[port_id]);
+                c->pFile        = ports[port_id++];
+                TRACE_PORT(ports[port_id]);
+                c->pTrack       = ports[port_id++];
+                TRACE_PORT(ports[port_id]);
+                c->pMakeup      = ports[port_id++];
+                TRACE_PORT(ports[port_id]);
+                c->pMute        = ports[port_id++];
+                TRACE_PORT(ports[port_id]);
+                c->pActivity    = ports[port_id++];
+                TRACE_PORT(ports[port_id]);
+                c->pPredelay    = ports[port_id++];
+                TRACE_PORT(ports[port_id]);
+                c->pPanOut      = ports[port_id++];
             }
 
             // Bind wet processing ports
@@ -452,25 +452,25 @@ namespace lsp
             {
                 channel_t *c        = &vChannels[i];
 
-                TRACE_PORT(vPorts[port_id]);
-                c->pWetEq           = vPorts[port_id++];
-                TRACE_PORT(vPorts[port_id]);
+                TRACE_PORT(ports[port_id]);
+                c->pWetEq           = ports[port_id++];
+                TRACE_PORT(ports[port_id]);
                 port_id++;          // Skip equalizer visibility port
-                TRACE_PORT(vPorts[port_id]);
-                c->pLowCut          = vPorts[port_id++];
-                TRACE_PORT(vPorts[port_id]);
-                c->pLowFreq         = vPorts[port_id++];
+                TRACE_PORT(ports[port_id]);
+                c->pLowCut          = ports[port_id++];
+                TRACE_PORT(ports[port_id]);
+                c->pLowFreq         = ports[port_id++];
 
                 for (size_t j=0; j<meta::impulse_reverb_metadata::EQ_BANDS; ++j)
                 {
-                    TRACE_PORT(vPorts[port_id]);
-                    c->pFreqGain[j]     = vPorts[port_id++];
+                    TRACE_PORT(ports[port_id]);
+                    c->pFreqGain[j]     = ports[port_id++];
                 }
 
-                TRACE_PORT(vPorts[port_id]);
-                c->pHighCut         = vPorts[port_id++];
-                TRACE_PORT(vPorts[port_id]);
-                c->pHighFreq        = vPorts[port_id++];
+                TRACE_PORT(ports[port_id]);
+                c->pHighCut         = ports[port_id++];
+                TRACE_PORT(ports[port_id]);
+                c->pHighFreq        = ports[port_id++];
 
                 port_id         = port;
             }
