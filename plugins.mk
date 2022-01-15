@@ -18,13 +18,6 @@
 # along with lsp-plugins-impulse-reverb.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-# Package version
-ARTIFACT_ID                 = LSP_PLUGINS_IMPULSE_REVERB
-ARTIFACT_NAME               = lsp-plugins-impulse-reverb
-ARTIFACT_TYPE               = plug
-ARTIFACT_DESC               = LSP Impulse Reverb Plugin Series
-ARTIFACT_HEADERS            = lsp-plug.in
-ARTIFACT_VERSION            = 1.0.2-devel
-
-
-
+# Variables that describe dependencies
+PLUGIN_DEPENDENCIES     = LSP_PLUGINS_IMPULSE_REVERB
+PLUGIN_PACKAGE_NAME     = lsp-plugins
