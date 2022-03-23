@@ -24,7 +24,7 @@ ARTIFACT_NAME               = lsp-plugins-impulse-reverb
 ARTIFACT_TYPE               = plug
 ARTIFACT_DESC               = LSP Impulse Reverb Plugin Series
 ARTIFACT_HEADERS            = lsp-plug.in
-ARTIFACT_VERSION            = 1.0.2
+ARTIFACT_VERSION            = 1.0.3-devel
 
 
 
