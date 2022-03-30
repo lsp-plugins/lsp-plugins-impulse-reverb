@@ -212,7 +212,7 @@ namespace lsp
             "Impulse Reverb",
             B_CONVOLUTION,
             "hEUauzc_j3U",
-            "This plugin performs highly optimized real time zero-latency convolution\nto the input signal. It can be used as a cabinet emulator, some sort of\nequalizer or as a reverb simulation plugin. All what is needed is audio\nfile(s) with impulse response taken from the linear system (cabinet, equalizer\nor hall/room). The flexible configuration allows to use True Reverb processing."
+            "This plugin performs highly optimized real time zero-latency convolution\nto the input signal. It can be used as a cabinet emulator, some sort of\nequalizer or as a reverb simulation plugin. All what is needed is audio\nfile(s) with impulse response taken from the linear system (cabinet, equalizer\nor hall/room). The flexible configuration allows one to use True Reverb processing."
         };
 
         const meta::plugin_t impulse_reverb_mono =
