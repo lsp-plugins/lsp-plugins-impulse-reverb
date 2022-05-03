@@ -1034,7 +1034,7 @@ namespace lsp
             for (size_t i=0; i<meta::impulse_reverb_metadata::FILES; ++i)
             {
                 // Do we need to re-render file?
-                if (!cfg[i].bRender)
+                if (!cfg->bRender[i])
                     continue;
 
                 // Get audio file
