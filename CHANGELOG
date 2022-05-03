@@ -3,8 +3,8 @@
 *******************************************************************************
 
 === 1.0.3 ===
-- Updated plugin metadata (contributed by Dennis Braun).
-- Fixed clang warnings.
+* Updated plugin metadata (contributed by Dennis Braun).
+* Fixed clang warnings.
 * Updated build scripts and dependencies.
 
 === 1.0.2 ===
