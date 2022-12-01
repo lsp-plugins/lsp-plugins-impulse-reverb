@@ -21,6 +21,7 @@
 
 #include <private/plugins/impulse_reverb.h>
 #include <lsp-plug.in/common/alloc.h>
+#include <lsp-plug.in/common/atomic.h>
 #include <lsp-plug.in/dsp/dsp.h>
 #include <lsp-plug.in/dsp-units/units.h>
 #include <lsp-plug.in/dsp-units/misc/fade.h>
@@ -89,14 +90,6 @@ namespace lsp
         impulse_reverb::IRConfigurator::IRConfigurator(impulse_reverb *base)
         {
             pCore       = base;
-            for (size_t i=0; i<meta::impulse_reverb_metadata::FILES; ++i)
-                sReconfig.bRender[i]    = false;
-            for (size_t i=0; i<meta::impulse_reverb_metadata::CONVOLVERS; ++i)
-            {
-                sReconfig.nFile[i]      = 0;
-                sReconfig.nTrack[i]     = 0;
-                sReconfig.nRank[i]      = 0;
-            }
         }
 
         impulse_reverb::IRConfigurator::~IRConfigurator()
@@ -106,22 +99,41 @@ namespace lsp
 
         status_t impulse_reverb::IRConfigurator::run()
         {
-            return pCore->reconfigure(&sReconfig);
+            return pCore->reconfigure();
         }
 
         void impulse_reverb::IRConfigurator::dump(dspu::IStateDumper *v) const
         {
             v->write("pCore", pCore);
-            v->writev("bRender", sReconfig.bRender, meta::impulse_reverb_metadata::FILES);
-            v->writev("nFile", sReconfig.nFile, meta::impulse_reverb_metadata::CONVOLVERS);
-            v->writev("nTrack", sReconfig.nTrack, meta::impulse_reverb_metadata::CONVOLVERS);
-            v->writev("nRank", sReconfig.nRank, meta::impulse_reverb_metadata::CONVOLVERS);
+        }
+
+        //-------------------------------------------------------------------------
+        impulse_reverb::GCTask::GCTask(impulse_reverb *base)
+        {
+            pCore       = base;
+        }
+
+        impulse_reverb::GCTask::~GCTask()
+        {
+            pCore       = NULL;
+        }
+
+        status_t impulse_reverb::GCTask::run()
+        {
+            pCore->perform_gc();
+            return STATUS_OK;
+        }
+
+        void impulse_reverb::GCTask::dump(dspu::IStateDumper *v) const
+        {
+            v->write("pCore", pCore);
         }
 
         //-------------------------------------------------------------------------
         impulse_reverb::impulse_reverb(const meta::plugin_t *metadata):
             plug::Module(metadata),
-            sConfigurator(this)
+            sConfigurator(this),
+            sGCTask(this)
         {
             nInputs         = 0;
             for (const meta::port_t *p = metadata->ports; p->id != NULL; ++p)
@@ -130,6 +142,8 @@ namespace lsp
 
             nReconfigReq    = 0;
             nReconfigResp   = -1;
+            nRank           = 0;
+            pGCList         = NULL;
 
             pBypass         = NULL;
             pRank           = NULL;
@@ -148,33 +162,19 @@ namespace lsp
 
         void impulse_reverb::destroy_file(af_descriptor_t *af)
         {
-            // Destroy sample
-            if (af->pSwapSample != NULL)
-            {
-                af->pSwapSample->destroy();
-                delete af->pSwapSample;
-                af->pSwapSample = NULL;
-            }
-            if (af->pCurrSample != NULL)
-            {
-                af->pCurrSample->destroy();
-                delete af->pCurrSample;
-                af->pCurrSample = NULL;
-            }
-
             // Destroy current file
-            if (af->pCurr != NULL)
+            if (af->pOriginal != NULL)
             {
-                af->pCurr->destroy();
-                delete af->pCurr;
-                af->pCurr    = NULL;
+                af->pOriginal->destroy();
+                delete af->pOriginal;
+                af->pOriginal   = NULL;
             }
 
-            if (af->pSwap != NULL)
+            if (af->pProcessed != NULL)
             {
-                af->pSwap->destroy();
-                delete af->pSwap;
-                af->pSwap    = NULL;
+                af->pProcessed->destroy();
+                delete af->pProcessed;
+                af->pProcessed    = NULL;
             }
 
             // Forget port
@@ -210,6 +210,25 @@ namespace lsp
             c->sEqualizer.destroy();
             c->vOut     = NULL;
             c->vBuffer  = NULL;
+        }
+
+        void impulse_reverb::perform_gc()
+        {
+            dspu::Sample *gc_list = lsp::atomic_swap(&pGCList, NULL);
+            destroy_samples(gc_list);
+        }
+
+        void impulse_reverb::destroy_samples(dspu::Sample *gc_list)
+        {
+            // Iterate over the list and destroy each sample in the list
+            while (gc_list != NULL)
+            {
+                dspu::Sample *next = gc_list->gc_next();
+                gc_list->destroy();
+                delete gc_list;
+                lsp_trace("Destroyed sample %p", gc_list);
+                gc_list = next;
+            }
         }
 
         size_t impulse_reverb::get_fft_rank(size_t rank)
@@ -250,12 +269,10 @@ namespace lsp
             {
                 af_descriptor_t *f    = &vFiles[i];
 
-                f->pCurr        = NULL;
-                f->pSwap        = NULL;
-                f->pSwapSample  = NULL;
-                f->pCurrSample  = NULL;
-
                 f->sListen.init();
+
+                f->pOriginal    = NULL;
+                f->pProcessed   = NULL;
 
                 for (size_t j=0; j<meta::impulse_reverb_metadata::TRACKS_MAX; ++j)
                 {
@@ -267,7 +284,6 @@ namespace lsp
                 f->bRender      = false;
                 f->nStatus      = STATUS_UNSPECIFIED;
                 f->bSync        = true;
-                f->bSwap        = false;
                 f->fHeadCut     = 0.0f;
                 f->fTailCut     = 0.0f;
                 f->fFadeIn      = 0.0f;
@@ -296,11 +312,8 @@ namespace lsp
 
                 cv->pCurr           = NULL;
                 cv->pSwap           = NULL;
-                cv->nRank           = 0;
-                cv->nRankReq        = 0;
-                cv->nSource         = 0;
-                cv->nFileReq        = 0;
-                cv->nTrackReq       = 0;
+                cv->nFile           = 0;
+                cv->nTrack          = 0;
 
                 cv->vBuffer         = reinterpret_cast<float *>(ptr);
                 ptr                += tmp_buf_size;
@@ -512,7 +525,14 @@ namespace lsp
             float wet_gain      = pWet->value() * out_gain;
             bool bypass         = pBypass->value() >= 0.5f;
             float predelay      = pPredelay->value();
+
+            // Check that FFT rank has changed
             size_t rank         = get_fft_rank(pRank->value());
+            if (rank != nRank)
+            {
+                nRank               = rank;
+                ++nReconfigReq;
+            }
 
             // Adjust volume of dry channel
             if (nInputs == 1)
@@ -630,12 +650,11 @@ namespace lsp
                 // Analyze source
                 size_t file         = (cv->pMute->value() < 0.5f) ? cv->pFile->value() : 0;
                 size_t track        = cv->pTrack->value();
-                if ((file != cv->nFileReq) || (track != cv->nTrackReq) || (rank != cv->nRankReq))
+                if ((file != cv->nFile) || (track != cv->nTrack))
                 {
-                    nReconfigReq        ++;
-                    cv->nFileReq        = file;
-                    cv->nTrackReq       = track;
-                    cv->nRankReq        = rank;
+                    cv->nFile           = file;
+                    cv->nTrack          = track;
+                    ++nReconfigReq;
                 }
             }
 
@@ -668,19 +687,6 @@ namespace lsp
                 // Listen button pressed?
                 if (f->pListen != NULL)
                     f->sListen.submit(f->pListen->value());
-
-                if (f->sListen.pending())
-                {
-                    lsp_trace("Submitted listen toggle");
-                    size_t n_c = (f->pCurrSample != NULL) ? f->pCurrSample->channels() : 0;
-                    if (n_c > 0)
-                    {
-                        for (size_t j=0; j<2; ++j)
-                            vChannels[j].sPlayer.play(i, j % n_c, 1.0f, 0);
-                    }
-
-                    f->sListen.commit();
-                }
             }
         }
 
@@ -694,11 +700,23 @@ namespace lsp
                 vChannels[i].sBypass.init(sr);
                 vChannels[i].sEqualizer.set_sample_rate(sr);
             }
+
+            ++nReconfigReq;
         }
 
-        void impulse_reverb::sync_offline_tasks()
+        bool impulse_reverb::has_active_loading_tasks()
         {
-            bool ldrs_idle = true; // Indicator that all loaders are currently in idle state
+            for (size_t i=0; i<meta::impulse_reverb_metadata::FILES; ++i)
+                if (!vFiles[i].sLoader.idle())
+                    return true;
+            return false;
+        }
+
+        void impulse_reverb::process_loading_tasks()
+        {
+            // Do nothing with loading while configurator is active
+            if (!sConfigurator.idle())
+                return;
 
             for (size_t i=0; i<meta::impulse_reverb_metadata::FILES; ++i)
             {
@@ -712,65 +730,42 @@ namespace lsp
                 if (path == NULL)
                     continue;
 
-                // Do not allow launch loaders when reconfiguration is active
-                if (sConfigurator.idle())
+                if ((path->pending()) && (f->sLoader.idle())) // There is pending request for file reload
                 {
-                    if ((path->pending()) && (f->sLoader.idle())) // There is pending request for file reload
+                    // Try to submit task
+                    if (pExecutor->submit(&f->sLoader))
                     {
-                        // Try to submit task
-                        if (pExecutor->submit(&f->sLoader))
-                        {
-                            lsp_trace("successfully submitted load task");
-                            f->nStatus      = STATUS_LOADING;
-                            path->accept();
-                        }
-                    }
-                    else if ((path->accepted()) && (f->sLoader.completed())) // The reload request has been processed
-                    {
-                        // Swap file data
-                        lsp::swap(f->pSwap, f->pCurr);
-
-                        // Update file status and set re-rendering flag
-                        f->nStatus      = f->sLoader.code();
-                        f->bRender      = true;
-                        nReconfigReq    ++;
-
-                        // Now we surely can commit changes and reset task state
-                        path->commit();
-                        f->sLoader.reset();
+                        lsp_trace("Successfully submitted load task");
+                        f->nStatus      = STATUS_LOADING;
+                        path->accept();
                     }
                 }
+                else if ((path->accepted()) && (f->sLoader.completed())) // The reload request has been processed
+                {
+                    // Update file status and set re-rendering flag
+                    f->nStatus      = f->sLoader.code();
+                    ++nReconfigReq;
 
-                // Ensure that there are no active loader tasks
-                if (!f->sLoader.idle())
-                    ldrs_idle = false;
+                    // Now we surely can commit changes and reset task state
+                    path->commit();
+                    f->sLoader.reset();
+                }
             }
+        }
 
-            // Do not allow launch reconfiguration when loaders are active
-            if (!ldrs_idle)
+        void impulse_reverb::process_configuration_tasks()
+        {
+            // Do nothing if at least one loader is active
+            if (has_active_loading_tasks())
                 return;
 
-            if ((sConfigurator.idle()) && (nReconfigReq != nReconfigResp))
+            if ((nReconfigReq != nReconfigResp) && (sConfigurator.idle()))
             {
-                // Remember render state
-                for (size_t i=0; i<meta::impulse_reverb_metadata::FILES; ++i)
-                    sConfigurator.set_render(i, vFiles[i].bRender);
-                for (size_t i=0; i<meta::impulse_reverb_metadata::CONVOLVERS; ++i)
-                {
-                    sConfigurator.set_file(i, vConvolvers[i].nFileReq);
-                    sConfigurator.set_track(i, vConvolvers[i].nTrackReq);
-                    sConfigurator.set_rank(i, vConvolvers[i].nRankReq);
-                }
-
                 // Try to submit task
                 if (pExecutor->submit(&sConfigurator))
                 {
-                    lsp_trace("successfully submitted configuration task");
-
-                    // Clear render state and reconfiguration request
                     nReconfigResp   = nReconfigReq;
-                    for (size_t i=0; i<meta::impulse_reverb_metadata::FILES; ++i)
-                        vFiles[i].bRender   = false;
+                    lsp_trace("Successfully submitted configuration task");
                 }
             }
             else if (sConfigurator.completed())
@@ -779,29 +774,22 @@ namespace lsp
                 for (size_t i=0; i<meta::impulse_reverb_metadata::FILES; ++i)
                 {
                     af_descriptor_t *f = &vFiles[i];
-                    if (f->bSwap)
-                    {
-                        lsp::swap(f->pCurrSample, f->pSwapSample);
-                        f->bSwap            = false;
-                    }
 
-                    f->bSync = true;
-
-                    // Bind sample player
+                    // Bind sample player for each output channel
                     for (size_t j=0; j<2; ++j)
                     {
                         channel_t *c = &vChannels[j];
-                        c->sPlayer.bind(i, f->pCurrSample, false);
+                        c->sPlayer.bind(i, f->pProcessed);
                     }
+                    f->pProcessed   = NULL;
+                    f->bSync        = true;
                 }
 
                 // Update convolvers
                 for (size_t i=0; i<meta::impulse_reverb_metadata::CONVOLVERS; ++i)
                 {
                     convolver_t *c      = &vConvolvers[i];
-                    dspu::Convolver *cv = c->pCurr;
-                    c->pCurr            = c->pSwap;
-                    c->pSwap            = cv;
+                    lsp::swap(c->pCurr, c->pSwap);
                 }
 
                 // Reset configurator
@@ -809,14 +797,48 @@ namespace lsp
             }
         }
 
-        void impulse_reverb::process(size_t samples)
+        void impulse_reverb::process_gc_events()
         {
-            //---------------------------------------------------------------------
-            // Stage 1: process reconfiguration requests and file events
-            sync_offline_tasks();
+            if (sGCTask.completed())
+                sGCTask.reset();
 
-            //---------------------------------------------------------------------
-            // Stage 2: perform convolution
+            if (sGCTask.idle())
+            {
+                // Obtain the list of samples for destroy
+                if (pGCList == NULL)
+                {
+                    for (size_t i=0; i<2; ++i)
+                        if ((pGCList = vChannels[i].sPlayer.gc()) != NULL)
+                            break;
+                }
+                if (pGCList != NULL)
+                    pExecutor->submit(&sGCTask);
+            }
+        }
+
+        void impulse_reverb::process_listen_events()
+        {
+            for (size_t i=0; i<meta::impulse_reverb_metadata::FILES; ++i)
+            {
+                af_descriptor_t *f  = &vFiles[i];
+
+                if (!f->sListen.pending())
+                     continue;
+
+                lsp_trace("Submitted listen toggle");
+                dspu::Sample *s = vChannels[0].sPlayer.get(i);
+                size_t n_c = (s != NULL) ? s->channels() : 0;
+                if (n_c > 0)
+                {
+                    for (size_t j=0; j<2; ++j)
+                        vChannels[j].sPlayer.play(i, j%n_c, 1.0f, 0);
+                }
+                f->sListen.commit();
+            }
+        }
+
+        void impulse_reverb::perform_convolution(size_t samples)
+        {
             // Get pointers to data channels
             for (size_t i=0; i<nInputs; ++i)
                 vInputs[i].vIn      = vInputs[i].pIn->buffer<float>();
@@ -886,9 +908,13 @@ namespace lsp
 
                 samples            -= to_do;
             }
+        }
 
-            //---------------------------------------------------------------------
-            // Stage 3: output parameters
+        void impulse_reverb::output_parameters()
+        {
+            // Do not sync state of mesh if there are active tasks
+            bool tasks_active  = (!sConfigurator.idle()) || (has_active_loading_tasks());
+
             for (size_t i=0; i<meta::impulse_reverb_metadata::CONVOLVERS; ++i)
             {
                 // Output information about the convolver
@@ -901,18 +927,19 @@ namespace lsp
                 af_descriptor_t *af     = &vFiles[i];
 
                 // Output information about the file
-                size_t length           = (af->pCurr != NULL) ? af->pCurr->samples() : 0;
-                af->pLength->set_value(dspu::samples_to_millis(fSampleRate, length));
+                dspu::Sample *active    = vChannels[0].sPlayer.get(i);
+                size_t channels         = (active != NULL) ? active->channels() : 0;
+                channels                = lsp_min(channels, 2u);
+
+                float duration          = (af->pOriginal != NULL) ? af->pOriginal->duration() : 0;
+                af->pLength->set_value(duration);
                 af->pStatus->set_value(af->nStatus);
 
                 // Store file dump to mesh
                 plug::mesh_t *mesh      = af->pThumbs->buffer<plug::mesh_t>();
-    //            lsp_trace("i=%d, mesh=%p, is_empty=%d, bSync=%d", int(i), mesh, int(mesh->isEmpty()), int(af->bSync));
-                if ((mesh == NULL) || (!mesh->isEmpty()) || (!af->bSync))
+                if ((mesh == NULL) || (!mesh->isEmpty()) || (!af->bSync) || (tasks_active))
                     continue;
 
-                size_t channels     = (af->pCurrSample != NULL) ? af->pCurrSample->channels() : 0;
-    //            lsp_trace("curr_sample=%p, channels=%d", af->pCurrSample, int(channels));
                 if (channels > 0)
                 {
                     // Copy thumbnails
@@ -926,18 +953,27 @@ namespace lsp
             }
         }
 
+        void impulse_reverb::process(size_t samples)
+        {
+            process_loading_tasks();
+            process_configuration_tasks();
+            process_gc_events();
+            process_listen_events();
+            perform_convolution(samples);
+            output_parameters();
+        }
+
         status_t impulse_reverb::load(af_descriptor_t *descr)
         {
             lsp_trace("descr = %p", descr);
 
-            // Collect garbage
-            dspu::Sample *af    = descr->pSwap;
-            if (af != NULL)
+            // Remove swap data
+            if (descr->pOriginal != NULL)
             {
-                lsp_trace("Destroying file pSwap = %p", descr->pSwap);
-                descr->pSwap    = NULL;
-                af->destroy();
-                delete af;
+                descr->pOriginal->destroy();
+                delete descr->pOriginal;
+                lsp_trace("Destroyed sample %p", descr->pOriginal);
+                descr->pOriginal    = NULL;
             }
 
             // Check state
@@ -955,17 +991,22 @@ namespace lsp
                 return STATUS_UNSPECIFIED;
 
             // Load audio file
-            af   = new dspu::Sample();
+            dspu::Sample *af    = new dspu::Sample();
             if (af == NULL)
                 return STATUS_NO_MEM;
+            lsp_finally {
+                if (af != NULL)
+                {
+                    af->destroy();
+                    delete af;
+                }
+            };
 
             // Try to load file
-            float convLengthMaxSeconds = meta::impulse_reverb_metadata::CONV_LENGTH_MAX * 0.001f;
-            status_t status = af->load(fname, convLengthMaxSeconds);
+            float conv_length_max_seconds = meta::impulse_reverb_metadata::CONV_LENGTH_MAX * 0.001f;
+            status_t status = af->load(fname, conv_length_max_seconds);
             if (status != STATUS_OK)
             {
-                af->destroy();
-                delete af;
                 lsp_trace("load failed: status=%d (%s)", status, get_status(status));
                 return status;
             }
@@ -974,8 +1015,6 @@ namespace lsp
             status  = af->resample(fSampleRate);
             if (status != STATUS_OK)
             {
-                af->destroy();
-                delete af;
                 lsp_trace("resample failed: status=%d (%s)", status, get_status(status));
                 return status;
             }
@@ -993,14 +1032,13 @@ namespace lsp
             }
             descr->fNorm    = (max != 0.0f) ? 1.0f / max : 1.0f;
 
-            // File was successfully loaded, report to caller
-            descr->pSwap    = af;
-            lsp_trace("Setting pSwap = %p", descr->pSwap);
+            // File was successfully loaded, pass result to the caller
+            lsp::swap(descr->pOriginal, af);
 
             return STATUS_OK;
         }
 
-        status_t impulse_reverb::reconfigure(const reconfig_t *cfg)
+        status_t impulse_reverb::reconfigure()
         {
             // Perform garbage collection
             for (size_t i=0; i<meta::impulse_reverb_metadata::CONVOLVERS; ++i)
@@ -1019,24 +1057,19 @@ namespace lsp
             for (size_t i=0; i<meta::impulse_reverb_metadata::FILES; ++i)
             {
                 af_descriptor_t *f  = &vFiles[i];
-                dspu::Sample *s     = f->pSwapSample;
+                dspu::Sample *s     = f->pProcessed;
                 if (s == NULL)
                     continue;
 
-                lsp_trace("Destroying sample swapSample=%p file=%d (currSample=%p)", f->pSwapSample, int(i), f->pCurrSample);
-                f->pSwapSample  = NULL;
-
+                lsp_trace("Destroying sample %p file=%d", s, int(i));
                 s->destroy();
                 delete s;
+                f->pProcessed       = NULL;
             }
 
-            // Re-render files (if needed)
+            // Re-render files
             for (size_t i=0; i<meta::impulse_reverb_metadata::FILES; ++i)
             {
-                // Do we need to re-render file?
-                if (!cfg->bRender[i])
-                    continue;
-
                 // Get audio file
                 af_descriptor_t *f  = &vFiles[i];
 
@@ -1044,17 +1077,21 @@ namespace lsp
                 dspu::Sample *s     = new dspu::Sample();
                 if (s == NULL)
                     return STATUS_NO_MEM;
-                f->pSwapSample      = s;
-                f->bSwap            = true;
-                lsp_trace("Allocated swapSample=%p file=%d (currSample=%p)", s, int(i), f->pCurrSample);
+                lsp_finally {
+                    if (s != NULL)
+                    {
+                        s->destroy();
+                        delete s;
+                    }
+                };
 
-                dspu::Sample *af    = f->pCurr;
+                // Obtain the original sample
+                dspu::Sample *af    = f->pOriginal;
                 if (af == NULL)
                     continue;
 
                 ssize_t flen        = af->samples();
-                size_t channels     = (af->channels() < meta::impulse_reverb_metadata::TRACKS_MAX) ?
-                                        af->channels() : meta::impulse_reverb_metadata::TRACKS_MAX;
+                size_t channels     = lsp_min(af->channels(), meta::impulse_reverb_metadata::TRACKS_MAX);
 
                 // Buffer is present, file is present, check boundaries
                 size_t head_cut     = dspu::millis_to_samples(fSampleRate, f->fHeadCut);
@@ -1080,10 +1117,12 @@ namespace lsp
 
                     // Copy sample data and apply fading
                     if (f->bReverse)
+                    {
                         dsp::reverse2(dst, &src[tail_cut], fsamples);
+                        dspu::fade_in(dst, dst, dspu::millis_to_samples(fSampleRate, f->fFadeIn), fsamples);
+                    }
                     else
-                        dsp::copy(dst, &src[head_cut], fsamples);
-                    dspu::fade_in(dst, dst, dspu::millis_to_samples(fSampleRate, f->fFadeIn), fsamples);
+                        dspu::fade_in(dst, &src[head_cut], dspu::millis_to_samples(fSampleRate, f->fFadeIn), fsamples);
                     dspu::fade_out(dst, dst, dspu::millis_to_samples(fSampleRate, f->fFadeOut), fsamples);
 
                     // Now render thumbnail
@@ -1103,6 +1142,9 @@ namespace lsp
                     if (f->fNorm != 1.0f)
                         dsp::mul_k2(dst, f->fNorm, meta::impulse_reverb_metadata::MESH_SIZE);
                 }
+
+                // Commit sample to the processed list
+                lsp::swap(f->pProcessed, s);
             }
 
             // Randomize phase of the convolver
@@ -1116,33 +1158,33 @@ namespace lsp
                 convolver_t *c      = &vConvolvers[i];
 
                 // Check that routing has changed
-                size_t file     = cfg->nFile[i];
-                size_t track    = cfg->nTrack[i];
+                size_t file         = c->nFile;
+                size_t track        = c->nTrack;
                 if ((file <= 0) || (file > meta::impulse_reverb_metadata::FILES))
-                {
-                    c->nSource  = 0;
-                    c->nRank    = cfg->nRank[i];
                     continue;
-                }
-                else
-                    file --;
+                --file;
 
                 // Analyze sample
-                dspu::Sample *s = (vFiles[file].bSwap) ? vFiles[file].pSwapSample : vFiles[file].pCurrSample;
+                dspu::Sample *s = vFiles[file].pProcessed;
                 if ((s == NULL) || (!s->valid()) || (s->channels() <= track))
                     continue;
 
                 // Now we can create convolver
                 dspu::Convolver *cv   = new dspu::Convolver();
-                if (!cv->init(s->channel(track), s->length(), cfg->nRank[i], float((phase + i*step)& 0x7fffffff)/float(0x80000000)))
-                {
-                    cv->destroy();
-                    delete cv;
-                    return STATUS_NO_MEM;
-                }
+                lsp_finally {
+                    if (cv != NULL)
+                    {
+                        cv->destroy();
+                        delete cv;
+                    }
+                };
 
+                if (!cv->init(s->channel(track), s->length(), nRank, float((phase + i*step)& 0x7fffffff)/float(0x80000000)))
+                    return STATUS_NO_MEM;
+
+                // Commit result
                 lsp_trace("Allocated convolver pSwap=%p for channel %d (pCurr=%p)", cv, int(i), c->pCurr);
-                c->pSwap        = cv;
+                lsp::swap(c->pSwap, cv);
             }
 
             return STATUS_OK;
@@ -1155,6 +1197,8 @@ namespace lsp
             v->write("nInputs", nInputs);
             v->write("nReconfigReq", nReconfigReq);
             v->write("nReconfigResp", nReconfigResp);
+            v->write("nRank", nRank);
+            v->write("pGCList", pGCList);
 
             v->begin_array("vInputs", vInputs, 2);
             {
@@ -1212,12 +1256,6 @@ namespace lsp
                         v->write_object("pCurr", c->pCurr);
                         v->write_object("pSwap", c->pSwap);
 
-                        v->write("nRank", c->nRank);
-                        v->write("nRankReq", c->nRankReq);
-                        v->write("nSource", c->nSource);
-                        v->write("nFileReq", c->nFileReq);
-                        v->write("nTrackReq", c->nTrackReq);
-
                         v->write("vBuffer", c->vBuffer);
                         v->writev("fPanIn", c->fPanIn, 2);
                         v->writev("fPanOut", c->fPanOut, 2);
@@ -1242,12 +1280,9 @@ namespace lsp
                     const af_descriptor_t *af = &vFiles[i];
                     v->begin_object(af, sizeof(af_descriptor_t));
                     {
-                        v->write_object("pCurr", af->pCurr);
-                        v->write_object("pSwap", af->pSwap);
-
                         v->write_object("sListen", &af->sListen);
-                        v->write_object("pSwapSample", af->pSwapSample);
-                        v->write_object("pCurrSample", af->pCurrSample);
+                        v->write_object("pOriginal", af->pOriginal);
+                        v->write_object("pProcessed", af->pProcessed);
 
                         v->writev("vThumbs", af->vThumbs, meta::impulse_reverb_metadata::TRACKS_MAX);
 
@@ -1255,7 +1290,6 @@ namespace lsp
                         v->write("bRender", af->bRender);
                         v->write("nStatus", af->nStatus);
                         v->write("bSync", af->bSync);
-                        v->write("bSwap", af->bSwap);
 
                         v->write("fHeadCut", af->fHeadCut);
                         v->write("fTailCut", af->fTailCut);

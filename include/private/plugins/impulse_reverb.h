@@ -66,18 +66,9 @@ namespace lsp
                         void                dump(dspu::IStateDumper *v) const;
                 };
 
-                typedef struct reconfig_t
-                {
-                    bool                    bRender[meta::impulse_reverb_metadata::FILES];
-                    size_t                  nFile[meta::impulse_reverb_metadata::CONVOLVERS];
-                    size_t                  nTrack[meta::impulse_reverb_metadata::CONVOLVERS];
-                    size_t                  nRank[meta::impulse_reverb_metadata::CONVOLVERS];
-                } reconfig_t;
-
                 class IRConfigurator: public ipc::ITask
                 {
                     private:
-                        reconfig_t          sReconfig;
                         impulse_reverb     *pCore;
 
                     public:
@@ -87,27 +78,33 @@ namespace lsp
                     public:
                         virtual status_t    run();
                         void                dump(dspu::IStateDumper *v) const;
+                };
 
-                        inline void set_render(size_t idx, bool render)     { sReconfig.bRender[idx]    = render;   }
-                        inline void set_file(size_t idx, size_t file)       { sReconfig.nFile[idx]      = file;     }
-                        inline void set_track(size_t idx, size_t track)     { sReconfig.nTrack[idx]     = track;    }
-                        inline void set_rank(size_t idx, size_t rank)       { sReconfig.nRank[idx]      = rank;     }
+                class GCTask: public ipc::ITask
+                {
+                    private:
+                        impulse_reverb     *pCore;
+
+                    public:
+                        explicit GCTask(impulse_reverb *base);
+                        virtual ~GCTask();
+
+                    public:
+                        virtual status_t run();
+
+                        void        dump(dspu::IStateDumper *v) const;
                 };
 
                 typedef struct af_descriptor_t
                 {
-                    dspu::Sample       *pCurr;          // Current audio file
-                    dspu::Sample       *pSwap;          // Pointer to audio file for swapping between RT and non-RT code
-
                     dspu::Toggle        sListen;        // Listen toggle
-                    dspu::Sample       *pSwapSample;
-                    dspu::Sample       *pCurrSample;    // Rendered file sample
+                    dspu::Sample       *pOriginal;      // Original audio file
+                    dspu::Sample       *pProcessed;     // Processed audio file for sampler
                     float              *vThumbs[meta::impulse_reverb_metadata::TRACKS_MAX];           // Thumbnails
                     float               fNorm;          // Norming factor
                     bool                bRender;        // Flag that indicates that file needs rendering
                     status_t            nStatus;
                     bool                bSync;          // Synchronize file
-                    bool                bSwap;          // Swap samples
 
                     float               fHeadCut;
                     float               fTailCut;
@@ -136,11 +133,8 @@ namespace lsp
                     dspu::Convolver    *pCurr;          // Currently used convolver
                     dspu::Convolver    *pSwap;          // Swap
 
-                    size_t              nRank;          // Last applied rank
-                    size_t              nRankReq;       // Rank request
-                    size_t              nSource;        // Source
-                    size_t              nFileReq;       // File request
-                    size_t              nTrackReq;      // Track request
+                    size_t              nFile;          // File
+                    size_t              nTrack;         // Track
 
                     float              *vBuffer;        // Buffer for convolution
                     float               fPanIn[2];      // Input panning of convolver
@@ -184,18 +178,30 @@ namespace lsp
                 } input_t;
 
             protected:
-                status_t                load(af_descriptor_t *descr);
-                status_t                reconfigure(const reconfig_t *cfg);
                 static void             destroy_file(af_descriptor_t *af);
                 static void             destroy_channel(channel_t *c);
                 static void             destroy_convolver(convolver_t *cv);
                 static size_t           get_fft_rank(size_t rank);
-                void                    sync_offline_tasks();
+                static void             destroy_samples(dspu::Sample *gc_list);
+
+            protected:
+                bool                    has_active_loading_tasks();
+                status_t                load(af_descriptor_t *descr);
+                status_t                reconfigure();
+                void                    process_loading_tasks();
+                void                    process_configuration_tasks();
+                void                    process_gc_events();
+                void                    process_listen_events();
+                void                    perform_convolution(size_t samples);
+                void                    output_parameters();
+                void                    perform_gc();
 
             protected:
                 size_t                  nInputs;
                 size_t                  nReconfigReq;
                 size_t                  nReconfigResp;
+                size_t                  nRank;
+                dspu::Sample           *pGCList;        // Garbage collection list
 
                 input_t                 vInputs[2];
                 channel_t               vChannels[2];
@@ -203,6 +209,7 @@ namespace lsp
                 af_descriptor_t         vFiles[meta::impulse_reverb_metadata::FILES];
 
                 IRConfigurator          sConfigurator;
+                GCTask                  sGCTask;
 
                 plug::IPort            *pBypass;
                 plug::IPort            *pRank;
