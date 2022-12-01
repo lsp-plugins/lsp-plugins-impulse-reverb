@@ -932,7 +932,7 @@ namespace lsp
                 channels                = lsp_min(channels, 2u);
 
                 float duration          = (af->pOriginal != NULL) ? af->pOriginal->duration() : 0;
-                af->pLength->set_value(duration);
+                af->pLength->set_value(duration * 1000.0f);
                 af->pStatus->set_value(af->nStatus);
 
                 // Store file dump to mesh
