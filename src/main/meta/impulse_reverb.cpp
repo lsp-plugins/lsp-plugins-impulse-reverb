@@ -27,7 +27,7 @@
 
 #define LSP_PLUGINS_IMPULSE_REVERB_VERSION_MAJOR       1
 #define LSP_PLUGINS_IMPULSE_REVERB_VERSION_MINOR       0
-#define LSP_PLUGINS_IMPULSE_REVERB_VERSION_MICRO       5
+#define LSP_PLUGINS_IMPULSE_REVERB_VERSION_MICRO       6
 
 #define LSP_PLUGINS_IMPULSE_REVERB_VERSION  \
     LSP_MODULE_VERSION( \
@@ -229,7 +229,7 @@ namespace lsp
             NULL,
             LSP_PLUGINS_IMPULSE_REVERB_VERSION,
             impulse_reverb_classes,
-            E_DUMP_STATE,
+            E_DUMP_STATE | E_FILE_PREVIEW,
             impulse_reverb_mono_ports,
             "convolution/impulse_reverb/mono.xml",
             NULL,
@@ -251,7 +251,7 @@ namespace lsp
             NULL,
             LSP_PLUGINS_IMPULSE_REVERB_VERSION,
             impulse_reverb_classes,
-            E_DUMP_STATE,
+            E_DUMP_STATE | E_FILE_PREVIEW,
             impulse_reverb_stereo_ports,
             "convolution/impulse_reverb/stereo.xml",
             NULL,
