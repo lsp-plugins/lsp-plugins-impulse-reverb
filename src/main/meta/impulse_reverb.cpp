@@ -204,7 +204,9 @@ namespace lsp
             PORTS_END
         };
 
-        static const int impulse_reverb_classes[] = { C_REVERB, -1 };
+        static const int plugin_classes[]           = { C_REVERB, -1 };
+        static const int clap_features_mono[]       = { CF_AUDIO_EFFECT, CF_REVERB, CF_MONO, -1 };
+        static const int clap_features_stereo[]     = { CF_AUDIO_EFFECT, CF_REVERB, CF_STEREO, -1 };
 
         const meta::bundle_t impulse_reverb_bundle =
         {
@@ -227,8 +229,10 @@ namespace lsp
             "fggq",
             0,
             NULL,
+            LSP_CLAP_URI("impulse_reverb_mono"),
             LSP_PLUGINS_IMPULSE_REVERB_VERSION,
-            impulse_reverb_classes,
+            plugin_classes,
+            clap_features_mono,
             E_DUMP_STATE | E_FILE_PREVIEW,
             impulse_reverb_mono_ports,
             "convolution/impulse_reverb/mono.xml",
@@ -249,8 +253,10 @@ namespace lsp
             "o9zj",
             0,
             NULL,
+            LSP_CLAP_URI("impulse_reverb_stereo"),
             LSP_PLUGINS_IMPULSE_REVERB_VERSION,
-            impulse_reverb_classes,
+            plugin_classes,
+            clap_features_stereo,
             E_DUMP_STATE | E_FILE_PREVIEW,
             impulse_reverb_stereo_ports,
             "convolution/impulse_reverb/stereo.xml",
