@@ -1045,16 +1045,16 @@ namespace lsp
                 af_descriptor_t *f  = &vFiles[i];
                 destroy_sample(f->pProcessed);
 
+                // Obtain the original sample
+                dspu::Sample *af    = f->pOriginal;
+                if (af == NULL)
+                    continue;
+
                 // Allocate new sample
                 dspu::Sample *s     = new dspu::Sample();
                 if (s == NULL)
                     return STATUS_NO_MEM;
                 lsp_finally { destroy_sample(s); };
-
-                // Obtain the original sample
-                dspu::Sample *af    = f->pOriginal;
-                if (af == NULL)
-                    continue;
 
                 ssize_t flen        = af->samples();
                 size_t channels     = lsp_min(af->channels(), meta::impulse_reverb_metadata::TRACKS_MAX);
