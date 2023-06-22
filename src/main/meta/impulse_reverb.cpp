@@ -126,8 +126,8 @@ namespace lsp
             METER("ifl" id, "Impulse length" label, U_MSEC, impulse_reverb_metadata::CONV_LENGTH), \
             MESH("ifd" id, "Impulse file contents" label, impulse_reverb_metadata::TRACKS_MAX, impulse_reverb_metadata::MESH_SIZE)
 
-        #define IR_CONVOLVER_MONO(id, label, track, mix) \
-            COMBO("csf" id, "Channel source file" label, 0, ir_files), \
+        #define IR_CONVOLVER_MONO(id, label, file, track, mix) \
+            COMBO("csf" id, "Channel source file" label, file, ir_files), \
             COMBO("cst" id, "Channel source track" label, track, ir_tracks), \
             AMP_GAIN100("mk" id, "Makeup gain" label, 1.0f), \
             SWITCH("cam" id, "Channel mute" label, 0.0f), \
@@ -135,9 +135,9 @@ namespace lsp
             CONTROL("pd" id, "Channel pre-delay" label, U_MSEC, impulse_reverb_metadata::PREDELAY), \
             PAN_CTL("com" id, "Channel Left/Right output mix" label, mix)
 
-        #define IR_CONVOLVER_STEREO(id, label, track, in_mix, out_mix) \
+        #define IR_CONVOLVER_STEREO(id, label, file, track, in_mix, out_mix) \
             PAN_CTL("cim" id, "Left/Right input mix" label, in_mix), \
-            IR_CONVOLVER_MONO(id, label, track, out_mix)
+            IR_CONVOLVER_MONO(id, label, file, track, out_mix)
 
         #define IR_EQ_BAND(id, freq)    \
             CONTROL("eq_" #id, "Band " freq "Hz gain", U_GAIN_AMP, impulse_reverb_metadata::BA)
@@ -171,10 +171,10 @@ namespace lsp
             IR_SAMPLE_FILE("1", " 1"),
             IR_SAMPLE_FILE("2", " 2"),
             IR_SAMPLE_FILE("3", " 3"),
-            IR_CONVOLVER_MONO("0", " 0", 0, -100.0f),
-            IR_CONVOLVER_MONO("1", " 1", 1, +100.0f),
-            IR_CONVOLVER_MONO("2", " 2", 0, -100.0f),
-            IR_CONVOLVER_MONO("3", " 3", 1, +100.0f),
+            IR_CONVOLVER_MONO("0", " 0", 1, 0, -100.0f),
+            IR_CONVOLVER_MONO("1", " 1", 1, 1, +100.0f),
+            IR_CONVOLVER_MONO("2", " 2", 0, 0, -100.0f),
+            IR_CONVOLVER_MONO("3", " 3", 0, 1, +100.0f),
 
             // Impulse response equalizer
             IR_EQUALIZER,
@@ -193,10 +193,10 @@ namespace lsp
             IR_SAMPLE_FILE("1", " 1"),
             IR_SAMPLE_FILE("2", " 2"),
             IR_SAMPLE_FILE("3", " 3"),
-            IR_CONVOLVER_STEREO("0", " 0", 0, -100.0f, -100.0f),
-            IR_CONVOLVER_STEREO("1", " 1", 1, -100.0f, +100.0f),
-            IR_CONVOLVER_STEREO("2", " 2", 2, +100.0f, -100.0f),
-            IR_CONVOLVER_STEREO("3", " 3", 3, +100.0f, +100.0f),
+            IR_CONVOLVER_STEREO("0", " 0", 1, 0, -100.0f, -100.0f),
+            IR_CONVOLVER_STEREO("1", " 1", 0, 1, -100.0f, +100.0f),
+            IR_CONVOLVER_STEREO("2", " 2", 0, 2, +100.0f, -100.0f),
+            IR_CONVOLVER_STEREO("3", " 3", 1, 1, +100.0f, +100.0f),
 
             // Impulse response equalizer
             IR_EQUALIZER,
