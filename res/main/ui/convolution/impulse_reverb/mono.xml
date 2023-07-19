@@ -122,7 +122,7 @@
 
 		<group text="groups.processors" ipadding="0">
 
-			<grid rows="7" cols="17" expand="true">
+			<grid rows="7" cols="19" expand="true">
 				<!-- r1 -->
 				<ui:with pad.h="6" pad.v="4" vreduce="true">
 					<label text="labels.specials.num"/>
@@ -132,6 +132,7 @@
 					<cell cols="2"><label text="labels.source"/></cell>
 					<cell rows="7"><vsep bg.color="bg" pad.v="0" pad.h="2" hreduce="true"/></cell>
 					<label text="labels.makeup"/>
+					<label text="labels.signal.out_lr"/>
 
 					<cell rows="7"><vsep bg.color="bg" pad.v="0" pad.h="2" hreduce="true"/></cell>
 
@@ -142,6 +143,7 @@
 					<cell cols="2"><label text="labels.source"/></cell>
 					<cell rows="7"><vsep bg.color="bg" pad.v="0" pad.h="2" hreduce="true"/></cell>
 					<label text="labels.makeup"/>
+					<label text="labels.signal.out_lr"/>
 				</ui:with>
 
 				<!-- r3 -->
@@ -154,7 +156,9 @@
 						<hsep/>
 						<hsep/>
 						<hsep/>
+						<hsep/>
 						<cell cols="2"><hsep/></cell>
+						<hsep/>
 						<hsep/>
 					</ui:with>
 
@@ -169,6 +173,7 @@
 							</vbox>
 						</cell>
 						<knob id="mk${i}" size="20"/>
+						<knob id="com${i}" size="20"/>
 
 						<label text="labels.specials.idx" text:id="${:i+2}" vreduce="true"/>
 						<knob id="pd${:i+2}" size="20"/>
@@ -179,6 +184,7 @@
 							</vbox>
 						</cell>
 						<knob id="mk${:i+2}" size="20"/>
+						<knob id="com${:i+2}" size="20"/>
 					</ui:with>
 
 					<!-- r4 r7 -->
@@ -190,6 +196,7 @@
 							<label text="labels.active" pad="0"/>
 						</hbox>
 						<value id="mk${i}" width.min="48" sline="true"/>
+						<value id="com${i}" width.min="38" sline="true"/>
 
 						<label/>
 						<value id="pd${:i+2}" width.min="48" sline="true"/>
@@ -198,6 +205,7 @@
 							<label text="labels.active" pad="0"/>
 						</hbox>
 						<value id="mk${:i+2}" width.min="48" sline="true"/>
+						<value id="com${:i+2}" width.min="38" sline="true"/>
 					</ui:with>
 				</ui:for>
 			</grid>
