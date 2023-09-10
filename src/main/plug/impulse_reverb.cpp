@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2021 Linux Studio Plugins Project <https://lsp-plug.in/>
- *           (C) 2021 Vladimir Sadovnikov <sadko4u@gmail.com>
+ * Copyright (C) 2023 Linux Studio Plugins Project <https://lsp-plug.in/>
+ *           (C) 2023 Vladimir Sadovnikov <sadko4u@gmail.com>
  *
  * This file is part of lsp-plugins-impulse-reverb
  * Created on: 3 авг. 2021 г.
@@ -30,12 +30,17 @@
 
 #define TMP_BUF_SIZE            4096
 #define CONV_RANK               10
-#define TRACE_PORT(p)           lsp_trace("  port id=%s", (p)->metadata()->id);
 
 namespace lsp
 {
     namespace plugins
     {
+        static plug::IPort *TRACE_PORT(plug::IPort *p)
+        {
+            lsp_trace("  port id=%s", (p)->metadata()->id);
+            return p;
+        }
+
         //---------------------------------------------------------------------
         // Plugin factory
         static const meta::plugin_t *plugins[] =
@@ -146,6 +151,93 @@ namespace lsp
             nRank           = 0;
             pGCList         = NULL;
 
+            for (size_t i=0; i<2; ++i)
+            {
+                input_t *in     = &vInputs[i];
+                in->vIn         = NULL;
+                in->pIn         = NULL;
+                in->pPan        = NULL;
+            }
+
+            for (size_t i=0; i<2; ++i)
+            {
+                channel_t *c    = &vChannels[i];
+
+                c->vOut         = NULL;
+                c->vBuffer      = NULL;
+                c->fDryPan[0]   = 0.0f;
+                c->fDryPan[1]   = 0.0f;
+
+                c->pOut         = NULL;
+                c->pWetEq       = NULL;
+                c->pLowCut      = NULL;
+                c->pLowFreq     = NULL;
+                c->pHighCut     = NULL;
+                c->pHighFreq    = NULL;
+
+                for (size_t j=0; j<meta::impulse_reverb_metadata::EQ_BANDS; ++j)
+                    c->pFreqGain[j]     = NULL;
+            }
+
+            for (size_t i=0; i<meta::impulse_reverb_metadata::CONVOLVERS; ++i)
+            {
+                convolver_t *c      = &vConvolvers[i];
+
+                c->pCurr            = NULL;
+                c->pSwap            = NULL;
+
+                c->nFile            = 0;
+                c->nTrack           = 0;
+
+                c->vBuffer          = NULL;
+                c->fPanIn[0]        = 0.0f;
+                c->fPanIn[1]        = 0.0f;
+                c->fPanOut[0]       = 0.0f;
+                c->fPanOut[1]       = 0.0f;
+
+                c->pMakeup          = NULL;
+                c->pPanIn           = NULL;
+                c->pPanOut          = NULL;
+                c->pFile            = NULL;
+                c->pTrack           = NULL;
+                c->pPredelay        = NULL;
+                c->pMute            = NULL;
+                c->pActivity        = NULL;
+            }
+
+            for (size_t i=0; i<meta::impulse_reverb_metadata::FILES; ++i)
+            {
+                af_descriptor_t *af = &vFiles[i];
+
+                af->pOriginal       = NULL;
+                af->pProcessed      = NULL;
+
+                for (size_t j=0; j<meta::impulse_reverb_metadata::TRACKS_MAX; ++j)
+                    af->vThumbs[j]      = NULL;
+
+                af->fNorm           = 0.0f;
+                af->bRender         = true;
+                af->nStatus         = STATUS_UNKNOWN_ERR;
+                af->bSync           = true;
+
+                af->fHeadCut        = 0.0f;
+                af->fTailCut        = 0.0f;
+                af->fFadeIn         = 0.0f;
+                af->fFadeOut        = 0.0f;
+                af->bReverse        = false;
+
+                af->pFile           = NULL;
+                af->pHeadCut        = NULL;
+                af->pTailCut        = NULL;
+                af->pFadeIn         = NULL;
+                af->pFadeOut        = NULL;
+                af->pListen         = NULL;
+                af->pReverse        = NULL;
+                af->pStatus         = NULL;
+                af->pLength         = NULL;
+                af->pThumbs         = NULL;
+            }
+
             pBypass         = NULL;
             pRank           = NULL;
             pDry            = NULL;
@@ -159,6 +251,7 @@ namespace lsp
 
         impulse_reverb::~impulse_reverb()
         {
+            do_destroy();
         }
 
         void impulse_reverb::destroy_file(af_descriptor_t *af)
@@ -380,39 +473,23 @@ namespace lsp
 
             lsp_trace("Binding audio ports");
             for (size_t i=0; i<nInputs; ++i)
-            {
-                TRACE_PORT(ports[port_id]);
-                vInputs[i].pIn      = ports[port_id++];
-            }
+                vInputs[i].pIn      = TRACE_PORT(ports[port_id++]);
             for (size_t i=0; i<2; ++i)
-            {
-                TRACE_PORT(ports[port_id]);
-                vChannels[i].pOut   = ports[port_id++];
-            }
+                vChannels[i].pOut   = TRACE_PORT(ports[port_id++]);
 
             // Bind common ports
             lsp_trace("Binding common ports");
-            TRACE_PORT(ports[port_id]);
-            pBypass     = ports[port_id++];
-            TRACE_PORT(ports[port_id]);            // Skip file selector
-            port_id++;
-            TRACE_PORT(ports[port_id]);            // FFT rank
-            pRank       = ports[port_id++];
-            TRACE_PORT(ports[port_id]);            // Pre-delay
-            pPredelay   = ports[port_id++];
+            pBypass     = TRACE_PORT(ports[port_id++]);
+            TRACE_PORT(ports[port_id++]);          // Skip file selector
+            pRank       = TRACE_PORT(ports[port_id++]);
+            pPredelay   = TRACE_PORT(ports[port_id++]);
 
             for (size_t i=0; i<nInputs; ++i)        // Panning ports
-            {
-                TRACE_PORT(ports[port_id]);
-                vInputs[i].pPan     = ports[port_id++];
-            }
+                vInputs[i].pPan     = TRACE_PORT(ports[port_id++]);
 
-            TRACE_PORT(ports[port_id]);
-            pDry        = ports[port_id++];
-            TRACE_PORT(ports[port_id]);
-            pWet        = ports[port_id++];
-            TRACE_PORT(ports[port_id]);
-            pOutGain    = ports[port_id++];
+            pDry        = TRACE_PORT(ports[port_id++]);
+            pWet        = TRACE_PORT(ports[port_id++]);
+            pOutGain    = TRACE_PORT(ports[port_id++]);
 
             // Bind impulse file ports
             for (size_t i=0; i<meta::impulse_reverb_metadata::FILES; ++i)
@@ -420,26 +497,16 @@ namespace lsp
                 lsp_trace("Binding impulse file #%d ports", int(i));
                 af_descriptor_t *f  = &vFiles[i];
 
-                TRACE_PORT(ports[port_id]);
-                f->pFile        = ports[port_id++];
-                TRACE_PORT(ports[port_id]);
-                f->pHeadCut     = ports[port_id++];
-                TRACE_PORT(ports[port_id]);
-                f->pTailCut     = ports[port_id++];
-                TRACE_PORT(ports[port_id]);
-                f->pFadeIn      = ports[port_id++];
-                TRACE_PORT(ports[port_id]);
-                f->pFadeOut     = ports[port_id++];
-                TRACE_PORT(ports[port_id]);
-                f->pListen      = ports[port_id++];
-                TRACE_PORT(ports[port_id]);
-                f->pReverse     = ports[port_id++];
-                TRACE_PORT(ports[port_id]);
-                f->pStatus      = ports[port_id++];
-                TRACE_PORT(ports[port_id]);
-                f->pLength      = ports[port_id++];
-                TRACE_PORT(ports[port_id]);
-                f->pThumbs      = ports[port_id++];
+                f->pFile        = TRACE_PORT(ports[port_id++]);
+                f->pHeadCut     = TRACE_PORT(ports[port_id++]);
+                f->pTailCut     = TRACE_PORT(ports[port_id++]);
+                f->pFadeIn      = TRACE_PORT(ports[port_id++]);
+                f->pFadeOut     = TRACE_PORT(ports[port_id++]);
+                f->pListen      = TRACE_PORT(ports[port_id++]);
+                f->pReverse     = TRACE_PORT(ports[port_id++]);
+                f->pStatus      = TRACE_PORT(ports[port_id++]);
+                f->pLength      = TRACE_PORT(ports[port_id++]);
+                f->pThumbs      = TRACE_PORT(ports[port_id++]);
             }
 
             // Bind convolver ports
@@ -449,25 +516,15 @@ namespace lsp
                 convolver_t *c  = &vConvolvers[i];
 
                 if (nInputs > 1)    // Input panning
-                {
-                    TRACE_PORT(ports[port_id]);
-                    c->pPanIn       = ports[port_id++];
-                }
+                    c->pPanIn       = TRACE_PORT(ports[port_id++]);
 
-                TRACE_PORT(ports[port_id]);
-                c->pFile        = ports[port_id++];
-                TRACE_PORT(ports[port_id]);
-                c->pTrack       = ports[port_id++];
-                TRACE_PORT(ports[port_id]);
-                c->pMakeup      = ports[port_id++];
-                TRACE_PORT(ports[port_id]);
-                c->pMute        = ports[port_id++];
-                TRACE_PORT(ports[port_id]);
-                c->pActivity    = ports[port_id++];
-                TRACE_PORT(ports[port_id]);
-                c->pPredelay    = ports[port_id++];
-                TRACE_PORT(ports[port_id]);
-                c->pPanOut      = ports[port_id++];
+                c->pFile        = TRACE_PORT(ports[port_id++]);
+                c->pTrack       = TRACE_PORT(ports[port_id++]);
+                c->pMakeup      = TRACE_PORT(ports[port_id++]);
+                c->pMute        = TRACE_PORT(ports[port_id++]);
+                c->pActivity    = TRACE_PORT(ports[port_id++]);
+                c->pPredelay    = TRACE_PORT(ports[port_id++]);
+                c->pPanOut      = TRACE_PORT(ports[port_id++]);
             }
 
             // Bind wet processing ports
@@ -477,31 +534,28 @@ namespace lsp
             {
                 channel_t *c        = &vChannels[i];
 
-                TRACE_PORT(ports[port_id]);
-                c->pWetEq           = ports[port_id++];
-                TRACE_PORT(ports[port_id]);
-                port_id++;          // Skip equalizer visibility port
-                TRACE_PORT(ports[port_id]);
-                c->pLowCut          = ports[port_id++];
-                TRACE_PORT(ports[port_id]);
-                c->pLowFreq         = ports[port_id++];
+                c->pWetEq           = TRACE_PORT(ports[port_id++]);
+                TRACE_PORT(ports[port_id++]); // Skip equalizer visibility port
+                c->pLowCut          = TRACE_PORT(ports[port_id++]);
+                c->pLowFreq         = TRACE_PORT(ports[port_id++]);
 
                 for (size_t j=0; j<meta::impulse_reverb_metadata::EQ_BANDS; ++j)
-                {
-                    TRACE_PORT(ports[port_id]);
-                    c->pFreqGain[j]     = ports[port_id++];
-                }
+                    c->pFreqGain[j]     = TRACE_PORT(ports[port_id++]);
 
-                TRACE_PORT(ports[port_id]);
-                c->pHighCut         = ports[port_id++];
-                TRACE_PORT(ports[port_id]);
-                c->pHighFreq        = ports[port_id++];
+                c->pHighCut         = TRACE_PORT(ports[port_id++]);
+                c->pHighFreq        = TRACE_PORT(ports[port_id++]);
 
-                port_id         = port;
+                port_id             = port;
             }
         }
 
         void impulse_reverb::destroy()
+        {
+            plug::Module::destroy();
+            do_destroy();
+        }
+
+        void impulse_reverb::do_destroy()
         {
             // Destroy files
             for (size_t i=0; i<meta::impulse_reverb_metadata::FILES; ++i)
@@ -928,7 +982,7 @@ namespace lsp
             {
                 // Output information about the convolver
                 convolver_t *c          = &vConvolvers[i];
-                c->pActivity->set_value(c->pCurr != NULL);
+                c->pActivity->set_value((c->pCurr != NULL) ? 1.0f : 0.0f);
             }
 
             for (size_t i=0; i<meta::impulse_reverb_metadata::FILES; ++i)
@@ -977,12 +1031,14 @@ namespace lsp
         status_t impulse_reverb::load(af_descriptor_t *descr)
         {
             lsp_trace("descr = %p", descr);
+            if (descr == NULL)
+                return STATUS_UNKNOWN_ERR;
 
             // Destroy previously loaded sample
             destroy_sample(descr->pOriginal);
 
             // Check state
-            if ((descr == NULL) || (descr->pFile == NULL))
+            if (descr->pFile == NULL)
                 return STATUS_UNKNOWN_ERR;
 
             // Get path
@@ -1291,7 +1347,7 @@ namespace lsp
             v->write("pExecutor", pExecutor);
         }
 
-    } // namespace plugins
-} // namespace lsp
+    } /* namespace plugins */
+} /* namespace lsp */
 
 
