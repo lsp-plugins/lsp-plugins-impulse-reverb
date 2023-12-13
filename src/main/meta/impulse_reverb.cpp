@@ -221,6 +221,7 @@ namespace lsp
         {
             "Impulsnachhall Mono",
             "Impulse Reverb Mono",
+            "Impulse Reverb Mono",
             "INH1M",
             &developers::v_sadovnikov,
             "impulse_reverb_mono",
@@ -244,6 +245,7 @@ namespace lsp
         const meta::plugin_t impulse_reverb_stereo =
         {
             "Impulsnachhall Stereo",
+            "Impulse Reverb Stereo",
             "Impulse Reverb Stereo",
             "INH1S",
             &developers::v_sadovnikov,
