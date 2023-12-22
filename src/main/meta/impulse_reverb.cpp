@@ -27,7 +27,7 @@
 
 #define LSP_PLUGINS_IMPULSE_REVERB_VERSION_MAJOR       1
 #define LSP_PLUGINS_IMPULSE_REVERB_VERSION_MINOR       0
-#define LSP_PLUGINS_IMPULSE_REVERB_VERSION_MICRO       16
+#define LSP_PLUGINS_IMPULSE_REVERB_VERSION_MICRO       17
 
 #define LSP_PLUGINS_IMPULSE_REVERB_VERSION  \
     LSP_MODULE_VERSION( \
@@ -173,8 +173,8 @@ namespace lsp
             IR_SAMPLE_FILE("3", " 3"),
             IR_CONVOLVER_MONO("0", " 0", 1, 0, -100.0f),
             IR_CONVOLVER_MONO("1", " 1", 1, 1, +100.0f),
-            IR_CONVOLVER_MONO("2", " 2", 0, 0, -100.0f),
-            IR_CONVOLVER_MONO("3", " 3", 0, 1, +100.0f),
+            IR_CONVOLVER_MONO("2", " 2", 2, 0, -100.0f),
+            IR_CONVOLVER_MONO("3", " 3", 2, 1, +100.0f),
 
             // Impulse response equalizer
             IR_EQUALIZER,
@@ -194,9 +194,9 @@ namespace lsp
             IR_SAMPLE_FILE("2", " 2"),
             IR_SAMPLE_FILE("3", " 3"),
             IR_CONVOLVER_STEREO("0", " 0", 1, 0, -100.0f, -100.0f),
-            IR_CONVOLVER_STEREO("1", " 1", 0, 1, -100.0f, +100.0f),
-            IR_CONVOLVER_STEREO("2", " 2", 0, 2, +100.0f, -100.0f),
-            IR_CONVOLVER_STEREO("3", " 3", 1, 1, +100.0f, +100.0f),
+            IR_CONVOLVER_STEREO("1", " 1", 1, 1, -100.0f, +100.0f),
+            IR_CONVOLVER_STEREO("2", " 2", 2, 0, +100.0f, -100.0f),
+            IR_CONVOLVER_STEREO("3", " 3", 2, 1, +100.0f, +100.0f),
 
             // Impulse response equalizer
             IR_EQUALIZER,
@@ -221,6 +221,7 @@ namespace lsp
         {
             "Impulsnachhall Mono",
             "Impulse Reverb Mono",
+            "Impulse Reverb Mono",
             "INH1M",
             &developers::v_sadovnikov,
             "impulse_reverb_mono",
@@ -244,6 +245,7 @@ namespace lsp
         const meta::plugin_t impulse_reverb_stereo =
         {
             "Impulsnachhall Stereo",
+            "Impulse Reverb Stereo",
             "Impulse Reverb Stereo",
             "INH1S",
             &developers::v_sadovnikov,
