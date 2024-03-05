@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2021 Linux Studio Plugins Project <https://lsp-plug.in/>
- *           (C) 2021 Vladimir Sadovnikov <sadko4u@gmail.com>
+ * Copyright (C) 2024 Linux Studio Plugins Project <https://lsp-plug.in/>
+ *           (C) 2024 Vladimir Sadovnikov <sadko4u@gmail.com>
  *
  * This file is part of lsp-plugins-impulse-reverb
  * Created on: 3 авг. 2021 г.
@@ -27,7 +27,7 @@
 
 #define LSP_PLUGINS_IMPULSE_REVERB_VERSION_MAJOR       1
 #define LSP_PLUGINS_IMPULSE_REVERB_VERSION_MINOR       0
-#define LSP_PLUGINS_IMPULSE_REVERB_VERSION_MICRO       17
+#define LSP_PLUGINS_IMPULSE_REVERB_VERSION_MICRO       18
 
 #define LSP_PLUGINS_IMPULSE_REVERB_VERSION  \
     LSP_MODULE_VERSION( \
@@ -228,6 +228,8 @@ namespace lsp
             LSP_LV2_URI("impulse_reverb_mono"),
             LSP_LV2UI_URI("impulse_reverb_mono"),
             "fggq",
+            LSP_VST3_UID("inh1m   fggq"),
+            LSP_VST3UI_UID("inh1m   fggq"),
             0,
             NULL,
             LSP_CLAP_URI("impulse_reverb_mono"),
@@ -253,6 +255,8 @@ namespace lsp
             LSP_LV2_URI("impulse_reverb_stereo"),
             LSP_LV2UI_URI("impulse_reverb_stereo"),
             "o9zj",
+            LSP_VST3_UID("inh1s   o9zj"),
+            LSP_VST3UI_UID("inh1s   o9zj"),
             0,
             NULL,
             LSP_CLAP_URI("impulse_reverb_stereo"),
