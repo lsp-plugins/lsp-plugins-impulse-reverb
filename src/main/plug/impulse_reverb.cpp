@@ -237,6 +237,7 @@ namespace lsp
             pRank           = NULL;
             pDry            = NULL;
             pWet            = NULL;
+            pDryWet         = NULL;
             pOutGain        = NULL;
             pPredelay       = NULL;
 
@@ -483,6 +484,7 @@ namespace lsp
 
             BIND_PORT(pDry);
             BIND_PORT(pWet);
+            BIND_PORT(pDryWet);
             BIND_PORT(pOutGain);
 
             // Bind impulse file ports
@@ -576,11 +578,14 @@ namespace lsp
 
         void impulse_reverb::update_settings()
         {
-            float out_gain      = pOutGain->value();
-            float dry_gain      = pDry->value() * out_gain;
-            float wet_gain      = pWet->value() * out_gain;
-            bool bypass         = pBypass->value() >= 0.5f;
-            float predelay      = pPredelay->value();
+            const float out_gain    = pOutGain->value();
+            const float dry         = pDry->value() * out_gain;
+            const float wet         = pWet->value() * out_gain;
+            const float drywet      = pDryWet->value() * 0.01f;
+            const float dry_gain    = dry * drywet + 1.0f - drywet;;
+            const float wet_gain    = wet * drywet;
+            const bool bypass       = pBypass->value() >= 0.5f;
+            const float predelay    = pPredelay->value();
 
             // Check that FFT rank has changed
             size_t rank         = get_fft_rank(pRank->value());
@@ -1330,6 +1335,7 @@ namespace lsp
             v->write("pRank", pRank);
             v->write("pDry", pDry);
             v->write("pWet", pWet);
+            v->write("pDryWet", pDryWet);
             v->write("pOutGain", pOutGain);
             v->write("pPredelay", pPredelay);
 

@@ -32,7 +32,7 @@
 					</ui:with>
 
 					<cell cols="2">
-						<grid rows="12" cols="1" expand="true" fill="true">
+						<vbox expand="true" fill="true">
 
 							<hsep bg.color="bg" pad.v="2" vreduce="true"/>
 
@@ -48,20 +48,22 @@
 
 							<hsep bg.color="bg" pad.v="2" vreduce="true"/>
 
-							<vbox height.min="105">
-								<label text="labels.signal.wet" pad.h="6" pad.v="4" vreduce="true"/>
-								<knob id="wet" scolor="wet"/>
-								<value id="wet" sline="true" pad.b="4"/>
-							</vbox>
+							<label text="labels.signal.wet" pad.h="6" pad.v="4" vreduce="true"/>
+							<knob id="wet" scolor="wet"/>
+							<value id="wet" sline="true" pad.b="4"/>
+							
+							<hsep bg.color="bg" pad.v="2" vreduce="true"/>
+
+							<label text="labels.signal.drywet" pad.h="6" pad.v="4" vreduce="true"/>
+							<knob id="drywet" scolor="drywet"/>
+							<value id="drywet" sline="true" pad.b="4"/>
 
 							<hsep bg.color="bg" pad.v="2" vreduce="true"/>
 
-							<vbox height.min="105">
-								<label text="labels.output" pad.h="6" pad.v="4" vreduce="true"/>
-								<knob id="g_out"/>
-								<value id="g_out" sline="true"/>
-							</vbox>
-						</grid>
+							<label text="labels.output" pad.h="6" pad.v="4" vreduce="true"/>
+							<knob id="g_out"/>
+							<value id="g_out" sline="true"/>
+						</vbox>
 					</cell>
 				</grid>
 			</group>
