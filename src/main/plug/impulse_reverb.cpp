@@ -582,7 +582,7 @@ namespace lsp
             const float dry         = pDry->value() * out_gain;
             const float wet         = pWet->value() * out_gain;
             const float drywet      = pDryWet->value() * 0.01f;
-            const float dry_gain    = dry * drywet + 1.0f - drywet;;
+            const float dry_gain    = dry * drywet + 1.0f - drywet;
             const float wet_gain    = wet * drywet;
             const bool bypass       = pBypass->value() >= 0.5f;
             const float predelay    = pPredelay->value();
