@@ -579,11 +579,11 @@ namespace lsp
         void impulse_reverb::update_settings()
         {
             const float out_gain    = pOutGain->value();
-            const float dry         = pDry->value() * out_gain;
-            const float wet         = pWet->value() * out_gain;
+            const float dry         = pDry->value();
+            const float wet         = pWet->value();
             const float drywet      = pDryWet->value() * 0.01f;
-            const float dry_gain    = dry * drywet + 1.0f - drywet;
-            const float wet_gain    = wet * drywet;
+            const float dry_gain    = (dry * drywet + 1.0f - drywet) * out_gain;
+            const float wet_gain    = wet * drywet * out_gain;
             const bool bypass       = pBypass->value() >= 0.5f;
             const float predelay    = pPredelay->value();
 
