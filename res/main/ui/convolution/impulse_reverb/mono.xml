@@ -19,43 +19,51 @@
 		<cell rows="3">
 			<group text="groups.output" ipadding="0">
 				<vbox expand="true" fill="true">
-					<ui:with pad.h="6" pad.v="4" vreduce="true">
-						<label text="labels.signal.dry_pan"/>
-					</ui:with>
 					<ui:with pad.h="6" pad.v="4">
-						<knob id="p" pad.t="4" pad.b="4" scolor="mono"/>
+						<label text="labels.signal.dry_pan"/>
+						<knob id="p" scolor="mono" balance="0"/>
 						<value id="p" sline="true"/>
 					</ui:with>
 
 					<hsep bg.color="bg" pad.v="2" vreduce="true"/>
 
-					<label text="labels.predelay" pad.h="6" pad.v="4" vreduce="true"/>
-					<knob id="pd" pad.v="4"/>
-					<value id="pd" sline="true" pad.b="4"/>
+					<ui:with pad.h="6" pad.v="4">
+						<label text="labels.predelay"/>
+						<knob id="pd" />
+						<value id="pd" sline="true"/>
+					</ui:with>
 
 					<hsep bg.color="bg" pad.v="2" vreduce="true"/>
 
-					<label text="labels.signal.dry" pad.h="6" pad.v="4" vreduce="true"/>
-					<knob id="dry" scolor="dry" pad.v="4"/>
-					<value id="dry" sline="true" pad.b="4"/>
+					<ui:with pad.h="6" pad.v="4">
+						<label text="labels.signal.dry" />
+						<knob id="dry" scolor="dry" />
+						<value id="dry" sline="true" />
+					</ui:with>
 
 					<hsep bg.color="bg" pad.v="2" vreduce="true"/>
 
-					<label text="labels.signal.wet" pad.h="6" pad.v="4" vreduce="true"/>
-					<knob id="wet" scolor="wet"/>
-					<value id="wet" sline="true" pad.b="4"/>
-					
-					<hsep bg.color="bg" pad.v="2" vreduce="true"/>
-
-					<label text="labels.signal.drywet" pad.h="6" pad.v="4" vreduce="true"/>
-					<knob id="drywet" scolor="drywet"/>
-					<value id="drywet" sline="true" pad.b="4"/>
+					<ui:with pad.h="6" pad.v="4">
+						<label text="labels.signal.wet" />
+						<knob id="wet" scolor="wet"/>
+						<value id="wet" sline="true" />
+					</ui:with>
 
 					<hsep bg.color="bg" pad.v="2" vreduce="true"/>
 
-					<label text="labels.output" pad.h="6" pad.v="4" vreduce="true"/>
-					<knob id="g_out"/>
-					<value id="g_out" sline="true"/>
+					<ui:with pad.h="6" pad.v="4">
+						<label text="labels.signal.drywet" />
+						<knob id="drywet" scolor="drywet"/>
+						<value id="drywet" sline="true" />
+					</ui:with>
+
+					<hsep bg.color="bg" pad.v="2" vreduce="true"/>
+
+					<ui:with pad.h="6" pad.v="4">
+						<label text="labels.output" />
+						<knob id="g_out"/>
+						<value id="g_out" sline="true"/>
+					</ui:with>
 				</vbox>
 			</group>
 		</cell>
@@ -78,7 +86,7 @@
 						length=":ifl${i}"
 						status=":ifs${i}"
 						width.min="600"
-						height.min="128"
+						height.min="245"
 						load.preview="true"
 						clipboard.head_cut="ihc${i}"
 						clipboard.tail_cut="itc${i}"

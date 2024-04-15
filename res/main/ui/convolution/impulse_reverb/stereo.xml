@@ -18,51 +18,58 @@
 
 		<cell rows="3">
 			<group text="groups.output" ipadding="0">
-				<grid rows="5" cols="2" fill="true">
-					<ui:with pad.h="6" pad.v="4" vreduce="true">
-						<cell cols="2"><label text="labels.signal.dry_pan"/></cell>
+				<grid rows="11" cols="2" fill="true">
+						<cell cols="2"><label text="labels.signal.dry_pan" pad.t="4"/></cell>
+						<ui:with pad.h="6" pad.v="4">
 						<label text="labels.chan.left"/>
 						<label text="labels.chan.right"/>
+						<knob id="pl" scolor="left"/>
+						<knob id="pr" scolor="right"/>
 					</ui:with>
-					<ui:with pad.h="6" pad.v="4">
-						<knob id="pl" pad.t="4" pad.b="4" scolor="left" size="16" ssize="3"/>
-						<knob id="pr" pad.t="4" pad.b="4" scolor="right" size="16" ssize="3"/>
-						<value id="pl" sline="true" width="38"/>
-						<value id="pr" sline="true" width="38"/>
-					</ui:with>
+					<value id="pl" sline="true" pad.h="6" pad.v="4" width="48"/>
+					<value id="pr" sline="true" pad.r="6" pad.v="4" width="48"/>
 
 					<cell cols="2">
-						<vbox expand="true" fill="true">
+						<hsep bg.color="bg" pad.v="2" vreduce="true"/>
+					</cell>
 
+					<cell cols="2">
+						<vbox>
+							<ui:with pad.v="4">
+								<label text="labels.predelay"/>
+								<knob id="pd"/>
+								<value id="pd" sline="true"/>
+								<hsep bg.color="bg" pad.v="2" vreduce="true"/>
+							</ui:with>
+						</vbox>
+					</cell>
+
+					<ui:with pad.h="6" pad.v="4">
+						<label text="labels.signal.dry" pad.h="6" pad.v="4"/>
+						<label text="labels.signal.wet" pad.h="6" pad.v="4"/>
+						<knob id="dry" scolor="dry"/>
+						<knob id="wet" scolor="wet"/>
+					</ui:with>
+					<value id="dry" sline="true" pad.h="6" pad.v="4" width="48"/>
+					<value id="wet" sline="true" pad.r="6" pad.v="4" width="48"/>
+
+					<cell cols="2">
+						<hsep bg.color="bg" pad.v="2" vreduce="true"/>
+					</cell>
+
+					<cell cols="2">
+						<vbox>
+							<ui:with pad.v="4">
+								<label text="labels.signal.drywet"/>
+								<knob id="drywet" scolor="drywet"/>
+								<value id="drywet" sline="true"/>
+							</ui:with>
 							<hsep bg.color="bg" pad.v="2" vreduce="true"/>
-
-							<label text="labels.predelay" pad.h="6" pad.v="4" vreduce="true"/>
-							<knob id="pd" pad.v="4"/>
-							<value id="pd" sline="true" pad.b="4"/>
-
-							<hsep bg.color="bg" pad.v="2" vreduce="true"/>
-
-							<label text="labels.signal.dry" pad.h="6" pad.v="4" vreduce="true"/>
-							<knob id="dry" scolor="dry" pad.v="4"/>
-							<value id="dry" sline="true" pad.b="4"/>
-
-							<hsep bg.color="bg" pad.v="2" vreduce="true"/>
-
-							<label text="labels.signal.wet" pad.h="6" pad.v="4" vreduce="true"/>
-							<knob id="wet" scolor="wet"/>
-							<value id="wet" sline="true" pad.b="4"/>
-							
-							<hsep bg.color="bg" pad.v="2" vreduce="true"/>
-
-							<label text="labels.signal.drywet" pad.h="6" pad.v="4" vreduce="true"/>
-							<knob id="drywet" scolor="drywet"/>
-							<value id="drywet" sline="true" pad.b="4"/>
-
-							<hsep bg.color="bg" pad.v="2" vreduce="true"/>
-
-							<label text="labels.output" pad.h="6" pad.v="4" vreduce="true"/>
-							<knob id="g_out"/>
-							<value id="g_out" sline="true"/>
+							<ui:with pad.v="4">
+								<label text="labels.output"/>
+								<knob id="g_out"/>
+								<value id="g_out" sline="true"/>
+							</ui:with>
 						</vbox>
 					</cell>
 				</grid>
@@ -87,7 +94,7 @@
 						length=":ifl${i}"
 						status=":ifs${i}"
 						width.min="600"
-						height.min="128"
+						height.min="172"
 						load.preview="true"
 						clipboard.head_cut="ihc${i}"
 						clipboard.tail_cut="itc${i}"
@@ -218,7 +225,7 @@
 						<value id="com${i}" width.min="38" sline="true"/>
 					</ui:with>
 
-						<ui:with pad.h="6" pad.b="4" bright=":ca${:i+2} ? 1 : 0.75" bg.bright=":ca${:i+2} ? 1 : :const_bg_darken">
+					<ui:with pad.h="6" pad.b="4" bright=":ca${:i+2} ? 1 : 0.75" bg.bright=":ca${:i+2} ? 1 : :const_bg_darken">
 						<label/>
 						<value id="cim${:i+2}" width.min="38" sline="true"/>
 						<value id="pd${:i+2}" width.min="48" sline="true"/>
