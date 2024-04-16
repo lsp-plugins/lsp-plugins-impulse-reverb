@@ -86,7 +86,7 @@
 						length=":ifl${i}"
 						status=":ifs${i}"
 						width.min="600"
-						height.min="245"
+						height.min="240"
 						load.preview="true"
 						clipboard.head_cut="ihc${i}"
 						clipboard.tail_cut="itc${i}"
