@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2023 Linux Studio Plugins Project <https://lsp-plug.in/>
- *           (C) 2023 Vladimir Sadovnikov <sadko4u@gmail.com>
+ * Copyright (C) 2024 Linux Studio Plugins Project <https://lsp-plug.in/>
+ *           (C) 2024 Vladimir Sadovnikov <sadko4u@gmail.com>
  *
  * This file is part of lsp-plugins-impulse-reverb
  * Created on: 3 авг. 2021 г.
@@ -217,6 +217,7 @@ namespace lsp
                 plug::IPort            *pRank;
                 plug::IPort            *pDry;
                 plug::IPort            *pWet;
+                plug::IPort            *pDryWet;
                 plug::IPort            *pOutGain;
                 plug::IPort            *pPredelay;
 
@@ -228,12 +229,17 @@ namespace lsp
 
             public:
                 explicit impulse_reverb(const meta::plugin_t *metadata);
+                impulse_reverb(const impulse_reverb &) = delete;
+                impulse_reverb(impulse_reverb &&) = delete;
                 virtual ~impulse_reverb() override;
 
-            public:
+                impulse_reverb & operator = (const impulse_reverb &) = delete;
+                impulse_reverb & operator = (impulse_reverb &&) = delete;
+
                 virtual void        init(plug::IWrapper *wrapper, plug::IPort **ports) override;
                 virtual void        destroy() override;
 
+            public:
                 virtual void        ui_activated() override;
                 virtual void        update_settings() override;
                 virtual void        update_sample_rate(long sr) override;

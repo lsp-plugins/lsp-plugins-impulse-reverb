@@ -27,7 +27,7 @@
 
 #define LSP_PLUGINS_IMPULSE_REVERB_VERSION_MAJOR       1
 #define LSP_PLUGINS_IMPULSE_REVERB_VERSION_MINOR       0
-#define LSP_PLUGINS_IMPULSE_REVERB_VERSION_MICRO       18
+#define LSP_PLUGINS_IMPULSE_REVERB_VERSION_MICRO       19
 
 #define LSP_PLUGINS_IMPULSE_REVERB_VERSION  \
     LSP_MODULE_VERSION( \
@@ -112,6 +112,7 @@ namespace lsp
             pan, \
             DRY_GAIN(1.0f), \
             WET_GAIN(1.0f), \
+            DRYWET(100.0f), \
             OUT_GAIN
 
         #define IR_SAMPLE_FILE(id, label)   \

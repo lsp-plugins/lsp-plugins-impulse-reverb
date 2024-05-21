@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2023 Linux Studio Plugins Project <https://lsp-plug.in/>
- *           (C) 2023 Vladimir Sadovnikov <sadko4u@gmail.com>
+ * Copyright (C) 2024 Linux Studio Plugins Project <https://lsp-plug.in/>
+ *           (C) 2024 Vladimir Sadovnikov <sadko4u@gmail.com>
  *
  * This file is part of lsp-plugins-impulse-reverb
  * Created on: 3 авг. 2021 г.
@@ -27,19 +27,14 @@
 #include <lsp-plug.in/dsp-units/units.h>
 #include <lsp-plug.in/dsp-units/misc/fade.h>
 #include <lsp-plug.in/plug-fw/meta/func.h>
-
-#define TMP_BUF_SIZE            4096
-#define CONV_RANK               10
+#include <lsp-plug.in/shared/debug.h>
 
 namespace lsp
 {
     namespace plugins
     {
-        static plug::IPort *TRACE_PORT(plug::IPort *p)
-        {
-            lsp_trace("  port id=%s", (p)->metadata()->id);
-            return p;
-        }
+        static constexpr size_t TMP_BUF_SIZE    = 0x1000;
+        static constexpr size_t CONV_RANK       = 10;
 
         //---------------------------------------------------------------------
         // Plugin factory
@@ -242,6 +237,7 @@ namespace lsp
             pRank           = NULL;
             pDry            = NULL;
             pWet            = NULL;
+            pDryWet         = NULL;
             pOutGain        = NULL;
             pPredelay       = NULL;
 
@@ -355,10 +351,9 @@ namespace lsp
             size_t thumbs_size  = meta::impulse_reverb_metadata::MESH_SIZE * sizeof(float);
             size_t alloc        = tmp_buf_size * (meta::impulse_reverb_metadata::CONVOLVERS + 2) +
                                   thumbs_size * meta::impulse_reverb_metadata::TRACKS_MAX * meta::impulse_reverb_metadata::FILES;
-            pData               = new uint8_t[alloc + DEFAULT_ALIGN];
-            if (pData == NULL)
+            uint8_t *ptr        = alloc_aligned<uint8_t>(pData, alloc, DEFAULT_ALIGN);
+            if (ptr == NULL)
                 return;
-            uint8_t *ptr    = align_ptr(pData, DEFAULT_ALIGN);
 
             // Initialize inputs
             for (size_t i=0; i<2; ++i)
@@ -473,23 +468,24 @@ namespace lsp
 
             lsp_trace("Binding audio ports");
             for (size_t i=0; i<nInputs; ++i)
-                vInputs[i].pIn      = TRACE_PORT(ports[port_id++]);
+                BIND_PORT(vInputs[i].pIn);
             for (size_t i=0; i<2; ++i)
-                vChannels[i].pOut   = TRACE_PORT(ports[port_id++]);
+                BIND_PORT(vChannels[i].pOut);
 
             // Bind common ports
             lsp_trace("Binding common ports");
-            pBypass     = TRACE_PORT(ports[port_id++]);
-            TRACE_PORT(ports[port_id++]);          // Skip file selector
-            pRank       = TRACE_PORT(ports[port_id++]);
-            pPredelay   = TRACE_PORT(ports[port_id++]);
+            BIND_PORT(pBypass);
+            SKIP_PORT("File selector");          // Skip file selector
+            BIND_PORT(pRank);
+            BIND_PORT(pPredelay);
 
             for (size_t i=0; i<nInputs; ++i)        // Panning ports
-                vInputs[i].pPan     = TRACE_PORT(ports[port_id++]);
+                BIND_PORT(vInputs[i].pPan);
 
-            pDry        = TRACE_PORT(ports[port_id++]);
-            pWet        = TRACE_PORT(ports[port_id++]);
-            pOutGain    = TRACE_PORT(ports[port_id++]);
+            BIND_PORT(pDry);
+            BIND_PORT(pWet);
+            BIND_PORT(pDryWet);
+            BIND_PORT(pOutGain);
 
             // Bind impulse file ports
             for (size_t i=0; i<meta::impulse_reverb_metadata::FILES; ++i)
@@ -497,16 +493,16 @@ namespace lsp
                 lsp_trace("Binding impulse file #%d ports", int(i));
                 af_descriptor_t *f  = &vFiles[i];
 
-                f->pFile        = TRACE_PORT(ports[port_id++]);
-                f->pHeadCut     = TRACE_PORT(ports[port_id++]);
-                f->pTailCut     = TRACE_PORT(ports[port_id++]);
-                f->pFadeIn      = TRACE_PORT(ports[port_id++]);
-                f->pFadeOut     = TRACE_PORT(ports[port_id++]);
-                f->pListen      = TRACE_PORT(ports[port_id++]);
-                f->pReverse     = TRACE_PORT(ports[port_id++]);
-                f->pStatus      = TRACE_PORT(ports[port_id++]);
-                f->pLength      = TRACE_PORT(ports[port_id++]);
-                f->pThumbs      = TRACE_PORT(ports[port_id++]);
+                BIND_PORT(f->pFile);
+                BIND_PORT(f->pHeadCut);
+                BIND_PORT(f->pTailCut);
+                BIND_PORT(f->pFadeIn);
+                BIND_PORT(f->pFadeOut);
+                BIND_PORT(f->pListen);
+                BIND_PORT(f->pReverse);
+                BIND_PORT(f->pStatus);
+                BIND_PORT(f->pLength);
+                BIND_PORT(f->pThumbs);
             }
 
             // Bind convolver ports
@@ -516,15 +512,15 @@ namespace lsp
                 convolver_t *c  = &vConvolvers[i];
 
                 if (nInputs > 1)    // Input panning
-                    c->pPanIn       = TRACE_PORT(ports[port_id++]);
+                    BIND_PORT(c->pPanIn);
 
-                c->pFile        = TRACE_PORT(ports[port_id++]);
-                c->pTrack       = TRACE_PORT(ports[port_id++]);
-                c->pMakeup      = TRACE_PORT(ports[port_id++]);
-                c->pMute        = TRACE_PORT(ports[port_id++]);
-                c->pActivity    = TRACE_PORT(ports[port_id++]);
-                c->pPredelay    = TRACE_PORT(ports[port_id++]);
-                c->pPanOut      = TRACE_PORT(ports[port_id++]);
+                BIND_PORT(c->pFile);
+                BIND_PORT(c->pTrack);
+                BIND_PORT(c->pMakeup);
+                BIND_PORT(c->pMute);
+                BIND_PORT(c->pActivity);
+                BIND_PORT(c->pPredelay);
+                BIND_PORT(c->pPanOut);
             }
 
             // Bind wet processing ports
@@ -534,16 +530,16 @@ namespace lsp
             {
                 channel_t *c        = &vChannels[i];
 
-                c->pWetEq           = TRACE_PORT(ports[port_id++]);
-                TRACE_PORT(ports[port_id++]); // Skip equalizer visibility port
-                c->pLowCut          = TRACE_PORT(ports[port_id++]);
-                c->pLowFreq         = TRACE_PORT(ports[port_id++]);
+                BIND_PORT(c->pWetEq);
+                SKIP_PORT("Equalizer visibility"); // Skip equalizer visibility port
+                BIND_PORT(c->pLowCut);
+                BIND_PORT(c->pLowFreq);
 
                 for (size_t j=0; j<meta::impulse_reverb_metadata::EQ_BANDS; ++j)
-                    c->pFreqGain[j]     = TRACE_PORT(ports[port_id++]);
+                    BIND_PORT(c->pFreqGain[j]);
 
-                c->pHighCut         = TRACE_PORT(ports[port_id++]);
-                c->pHighFreq        = TRACE_PORT(ports[port_id++]);
+                BIND_PORT(c->pHighCut);
+                BIND_PORT(c->pHighFreq);
 
                 port_id             = port;
             }
@@ -570,11 +566,7 @@ namespace lsp
                 destroy_channel(&vChannels[i]);
 
             // Delete all allocated data
-            if (pData != NULL)
-            {
-                delete [] pData;
-                pData           = NULL;
-            }
+            free_aligned(pData);
         }
 
         void impulse_reverb::ui_activated()
@@ -586,11 +578,14 @@ namespace lsp
 
         void impulse_reverb::update_settings()
         {
-            float out_gain      = pOutGain->value();
-            float dry_gain      = pDry->value() * out_gain;
-            float wet_gain      = pWet->value() * out_gain;
-            bool bypass         = pBypass->value() >= 0.5f;
-            float predelay      = pPredelay->value();
+            const float out_gain    = pOutGain->value();
+            const float dry         = pDry->value();
+            const float wet         = pWet->value();
+            const float drywet      = pDryWet->value() * 0.01f;
+            const float dry_gain    = (dry * drywet + 1.0f - drywet) * out_gain;
+            const float wet_gain    = wet * drywet * out_gain;
+            const bool bypass       = pBypass->value() >= 0.5f;
+            const float predelay    = pPredelay->value();
 
             // Check that FFT rank has changed
             size_t rank         = get_fft_rank(pRank->value());
@@ -1340,6 +1335,7 @@ namespace lsp
             v->write("pRank", pRank);
             v->write("pDry", pDry);
             v->write("pWet", pWet);
+            v->write("pDryWet", pDryWet);
             v->write("pOutGain", pOutGain);
             v->write("pPredelay", pPredelay);
 
