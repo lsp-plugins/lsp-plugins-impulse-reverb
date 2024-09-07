@@ -183,7 +183,7 @@
 					<!-- r3 r6 -->
 					<ui:with pad.h="6" pad.v="4">
 						<ui:with bright=":ca${:i} ? 1 : 0.75" bg.bright=":ca${:i} ? 1 : :const_bg_darken">
-							<label text="labels.specials.idx" text:id="${i}" vreduce="true"/>
+							<label text="labels.specials.idx" text:id="${:i+1}" vreduce="true"/>
 							<knob id="cim${i}" size="20" scolor=":ca${:i} ? 'kscale' : 'cycle_inactive'"/>
 							<knob id="pd${i}" size="20" scolor=":ca${:i} ? 'kscale' : 'cycle_inactive'"/>
 							<cell cols="2" pad="0">
@@ -197,7 +197,7 @@
 						</ui:with>
 
 						<ui:with bright=":ca${:i+2} ? 1 : 0.75" bg.bright=":ca${:i+2} ? 1 : :const_bg_darken">
-							<label text="labels.specials.idx" text:id="${:i+2}" vreduce="true"/>
+							<label text="labels.specials.idx" text:id="${:i+3}" vreduce="true"/>
 							<knob id="cim${:i+2}" size="20" scolor=":ca${:i+2} ? 'kscale' : 'cycle_inactive'"/>
 							<knob id="pd${:i+2}" size="20" scolor=":ca${:i+2} ? 'kscale' : 'cycle_inactive'"/>
 							<cell cols="2" pad="0">
