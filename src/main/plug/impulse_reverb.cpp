@@ -227,6 +227,7 @@ namespace lsp
                 af->pFadeIn         = NULL;
                 af->pFadeOut        = NULL;
                 af->pListen         = NULL;
+                af->pStop           = NULL;
                 af->pReverse        = NULL;
                 af->pStatus         = NULL;
                 af->pLength         = NULL;
@@ -289,6 +290,9 @@ namespace lsp
             destroy_samples(gc_list);
 
             c->sEqualizer.destroy();
+            for (size_t i=0; i<meta::impulse_reverb_metadata::FILES; ++i)
+                c->vPlaybacks[i].destroy();
+
             c->vOut     = NULL;
             c->vBuffer  = NULL;
         }
@@ -370,6 +374,7 @@ namespace lsp
                 af_descriptor_t *f    = &vFiles[i];
 
                 f->sListen.init();
+                f->sStop.init();
 
                 f->pOriginal    = NULL;
                 f->pProcessed   = NULL;
@@ -399,6 +404,7 @@ namespace lsp
                 f->pFadeIn      = NULL;
                 f->pFadeOut     = NULL;
                 f->pListen      = NULL;
+                f->pStop        = NULL;
                 f->pReverse     = NULL;
                 f->pStatus      = NULL;
                 f->pLength      = NULL;
@@ -499,6 +505,7 @@ namespace lsp
                 BIND_PORT(f->pFadeIn);
                 BIND_PORT(f->pFadeOut);
                 BIND_PORT(f->pListen);
+                BIND_PORT(f->pStop);
                 BIND_PORT(f->pReverse);
                 BIND_PORT(f->pStatus);
                 BIND_PORT(f->pLength);
@@ -748,6 +755,8 @@ namespace lsp
                 // Listen button pressed?
                 if (f->pListen != NULL)
                     f->sListen.submit(f->pListen->value());
+                if (f->pStop != NULL)
+                    f->sStop.submit(f->pStop->value());
             }
         }
 
@@ -879,22 +888,44 @@ namespace lsp
 
         void impulse_reverb::process_listen_events()
         {
+            const size_t fadeout = dspu::millis_to_samples(fSampleRate, 5.0f);
+            dspu::PlaySettings ps;
+
             for (size_t i=0; i<meta::impulse_reverb_metadata::FILES; ++i)
             {
                 af_descriptor_t *f  = &vFiles[i];
 
-                if (!f->sListen.pending())
-                     continue;
+                // Need to start audio preview playback?
+                if (f->sListen.pending())
+                {
+                    lsp_trace("Submitted listen toggle");
+                    dspu::Sample *s = vChannels[0].sPlayer.get(i);
+                    const size_t n_c = (s != NULL) ? s->channels() : 0;
+                    if (n_c > 0)
+                    {
+                        for (size_t j=0; j<2; ++j)
+                        {
+                            channel_t *c = &vChannels[j];
+                            ps.set_channel(i, j % n_c);
+                            ps.set_playback(0, 0, GAIN_AMP_0_DB);
 
-                lsp_trace("Submitted listen toggle");
-                dspu::Sample *s = vChannels[0].sPlayer.get(i);
-                size_t n_c = (s != NULL) ? s->channels() : 0;
-                if (n_c > 0)
+                            c->vPlaybacks[i].cancel(fadeout, 0);
+                            c->vPlaybacks[i] = c->sPlayer.play(&ps);
+                        }
+                    }
+                    f->sListen.commit();
+                }
+
+                // Need to cancel audio preview playback?
+                if (f->sStop.pending())
                 {
                     for (size_t j=0; j<2; ++j)
-                        vChannels[j].sPlayer.play(i, j%n_c, 1.0f, 0);
+                    {
+                        channel_t *c = &vChannels[j];
+                        c->vPlaybacks[i].cancel(fadeout, 0);
+                    }
+                    f->sStop.commit();
                 }
-                f->sListen.commit();
             }
         }
 
@@ -1240,6 +1271,7 @@ namespace lsp
                         v->write_object("sBypass", &c->sBypass);
                         v->write_object("sPlayer", &c->sPlayer);
                         v->write_object("sEqualizer", &c->sEqualizer);
+                        v->write_object_array("vPlaybacks", c->vPlaybacks, meta::impulse_reverb_metadata::FILES);
 
                         v->write("vOut", c->vOut);
                         v->write("vBuffer", c->vBuffer);
@@ -1296,6 +1328,7 @@ namespace lsp
                     v->begin_object(af, sizeof(af_descriptor_t));
                     {
                         v->write_object("sListen", &af->sListen);
+                        v->write_object("sStop", &af->sStop);
                         v->write_object("pOriginal", af->pOriginal);
                         v->write_object("pProcessed", af->pProcessed);
 
@@ -1320,6 +1353,7 @@ namespace lsp
                         v->write("pFadeIn", af->pFadeIn);
                         v->write("pFadeOut", af->pFadeOut);
                         v->write("pListen", af->pListen);
+                        v->write("pStop", af->pStop);
                         v->write("pReverse", af->pReverse);
                         v->write("pStatus", af->pStatus);
                         v->write("pLength", af->pLength);

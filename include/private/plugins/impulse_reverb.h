@@ -98,6 +98,7 @@ namespace lsp
                 typedef struct af_descriptor_t
                 {
                     dspu::Toggle        sListen;        // Listen toggle
+                    dspu::Toggle        sStop;          // Stop toggle
                     dspu::Sample       *pOriginal;      // Original audio file
                     dspu::Sample       *pProcessed;     // Processed audio file for sampler
                     float              *vThumbs[meta::impulse_reverb_metadata::TRACKS_MAX];           // Thumbnails
@@ -120,6 +121,7 @@ namespace lsp
                     plug::IPort        *pFadeIn;
                     plug::IPort        *pFadeOut;
                     plug::IPort        *pListen;
+                    plug::IPort        *pStop;
                     plug::IPort        *pReverse;       // Reverse
                     plug::IPort        *pStatus;        // Status of file loading
                     plug::IPort        *pLength;        // Length of file
@@ -155,6 +157,7 @@ namespace lsp
                     dspu::Bypass        sBypass;
                     dspu::SamplePlayer  sPlayer;
                     dspu::Equalizer     sEqualizer;     // Wet signal equalizer
+                    dspu::Playback      vPlaybacks[meta::impulse_reverb_metadata::FILES];   // Playbacks
 
                     float              *vOut;
                     float              *vBuffer;        // Rendering buffer

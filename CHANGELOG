@@ -3,7 +3,7 @@
 *******************************************************************************
 
 === 1.0.24 ===
-
+* Added Stop button for stopping audio file preview.
 
 === 1.0.23 ===
 * Updated build scripts and dependencies.
