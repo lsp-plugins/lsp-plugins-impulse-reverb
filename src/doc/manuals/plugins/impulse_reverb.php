@@ -55,7 +55,8 @@
 	<li><b>Tail cut</b> - cut amount of milliseconds from the end of the impulse files, can be used to remove large reverberation tail.</li>
 	<li><b>Fade in</b> - adds additional fading at the beginning of the impulse file.</li>
 	<li><b>Fade out</b> - adds additional fading at the end of the impulse file.</li>
-	<li><b>Listen</b> - this button allows to listen contents of the audio file.</li>
+	<li><b>Listen</b> - this button allows to listen preview of the audio file.</li>
+	<li><b>Stop</b> - this button allows to stop preview of the audio file.</li>
 </ul>
 <p><b>'Processors' section:</b></p>
 <ul>
