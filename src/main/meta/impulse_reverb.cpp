@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2024 Linux Studio Plugins Project <https://lsp-plug.in/>
- *           (C) 2024 Vladimir Sadovnikov <sadko4u@gmail.com>
+ * Copyright (C) 2025 Linux Studio Plugins Project <https://lsp-plug.in/>
+ *           (C) 2025 Vladimir Sadovnikov <sadko4u@gmail.com>
  *
  * This file is part of lsp-plugins-impulse-reverb
  * Created on: 3 авг. 2021 г.
@@ -117,6 +117,7 @@ namespace lsp
 
         #define IR_SAMPLE_FILE(id, label)   \
             PATH("ifn" id, "Impulse file" label),    \
+            CONTROL("psh" id, "File pitch" label, U_SEMITONES, impulse_reverb_metadata::FILE_PITCH), \
             CONTROL("ihc" id, "Head cut" label, U_MSEC, impulse_reverb_metadata::CONV_LENGTH), \
             CONTROL("itc" id, "Tail cut" label, U_MSEC, impulse_reverb_metadata::CONV_LENGTH), \
             CONTROL("ifi" id, "Fade in" label, U_MSEC, impulse_reverb_metadata::CONV_LENGTH), \

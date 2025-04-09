@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2024 Linux Studio Plugins Project <https://lsp-plug.in/>
- *           (C) 2024 Vladimir Sadovnikov <sadko4u@gmail.com>
+ * Copyright (C) 2025 Linux Studio Plugins Project <https://lsp-plug.in/>
+ *           (C) 2025 Vladimir Sadovnikov <sadko4u@gmail.com>
  *
  * This file is part of lsp-plugins-impulse-reverb
  * Created on: 3 авг. 2021 г.
@@ -211,15 +211,16 @@ namespace lsp
                     af->vThumbs[j]      = NULL;
 
                 af->fNorm           = 0.0f;
-                af->bRender         = true;
                 af->nStatus         = STATUS_UNKNOWN_ERR;
+                af->bRender         = true;
                 af->bSync           = true;
+                af->bReverse        = false;
 
+                af->fPitch          = 0.0f;
                 af->fHeadCut        = 0.0f;
                 af->fTailCut        = 0.0f;
                 af->fFadeIn         = 0.0f;
                 af->fFadeOut        = 0.0f;
-                af->bReverse        = false;
 
                 af->pFile           = NULL;
                 af->pHeadCut        = NULL;
@@ -386,19 +387,23 @@ namespace lsp
                 }
 
                 f->fNorm        = 1.0f;
-                f->bRender      = false;
                 f->nStatus      = STATUS_UNSPECIFIED;
+                f->bRender      = false;
                 f->bSync        = true;
+                f->bReverse     = false;
+
+                f->fPitch       = 0.0f;
                 f->fHeadCut     = 0.0f;
                 f->fTailCut     = 0.0f;
                 f->fFadeIn      = 0.0f;
                 f->fFadeOut     = 0.0f;
-                f->bReverse     = false;
+                f->fDuration    = 0.0f;
 
                 // Initialize loader
                 f->sLoader.init(this, f);
 
                 f->pFile        = NULL;
+                f->pPitch       = NULL;
                 f->pHeadCut     = NULL;
                 f->pTailCut     = NULL;
                 f->pFadeIn      = NULL;
@@ -500,6 +505,7 @@ namespace lsp
                 af_descriptor_t *f  = &vFiles[i];
 
                 BIND_PORT(f->pFile);
+                BIND_PORT(f->pPitch);
                 BIND_PORT(f->pHeadCut);
                 BIND_PORT(f->pTailCut);
                 BIND_PORT(f->pFadeIn);
@@ -732,17 +738,20 @@ namespace lsp
                 af_descriptor_t *f  = &vFiles[i];
 
                 // Check that file parameters have changed
+                float pitch         = f->pPitch->value();
                 float head_cut      = f->pHeadCut->value();
                 float tail_cut      = f->pTailCut->value();
                 float fade_in       = f->pFadeIn->value();
                 float fade_out      = f->pFadeOut->value();
                 bool reverse        = f->pReverse->value() >= 0.5f;
-                if ((f->fHeadCut != head_cut) ||
+                if ((f->fPitch != pitch) ||
+                    (f->fHeadCut != head_cut) ||
                     (f->fTailCut != tail_cut) ||
                     (f->fFadeIn  != fade_in ) ||
                     (f->fFadeOut != fade_out) ||
                     (f->bReverse != reverse))
                 {
+                    f->fPitch           = pitch;
                     f->fHeadCut         = head_cut;
                     f->fTailCut         = tail_cut;
                     f->fFadeIn          = fade_in;
@@ -1011,6 +1020,10 @@ namespace lsp
                 c->pActivity->set_value((c->pCurr != NULL) ? 1.0f : 0.0f);
             }
 
+            // Do not output meshes until configuration finishes
+            if (!sConfigurator.idle())
+                return;
+
             for (size_t i=0; i<meta::impulse_reverb_metadata::FILES; ++i)
             {
                 af_descriptor_t *af     = &vFiles[i];
@@ -1022,7 +1035,7 @@ namespace lsp
                 size_t channels         = (active != NULL) ? active->channels() : 0;
                 channels                = lsp_min(channels, 2u);
 
-                float duration          = (af->pOriginal != NULL) ? af->pOriginal->duration() : 0;
+                const float duration    = (af->pOriginal != NULL) ? af->fDuration : 0.0f;
                 af->pLength->set_value(duration * 1000.0f);
                 af->pStatus->set_value(af->nStatus);
 
@@ -1133,13 +1146,31 @@ namespace lsp
                 if (af == NULL)
                     continue;
 
+                // Copy data of original sample to temporary sample and perform resampling if needed
+                dspu::Sample temp;
+                if (f->fPitch != 0.0f)
+                {
+                    const size_t sample_rate_dst  = fSampleRate * dspu::semitones_to_frequency_shift(-f->fPitch);
+                    if (temp.copy(af) != STATUS_OK)
+                    {
+                        lsp_warn("Error copying source sample");
+                        return STATUS_NO_MEM;
+                    }
+                    if (temp.resample(sample_rate_dst) != STATUS_OK)
+                    {
+                        lsp_warn("Error resampling source sample");
+                        return STATUS_NO_MEM;
+                    }
+                    af          = &temp;
+                }
+
                 // Allocate new sample
                 dspu::Sample *s     = new dspu::Sample();
                 if (s == NULL)
                     return STATUS_NO_MEM;
                 lsp_finally { destroy_sample(s); };
 
-                ssize_t flen        = af->samples();
+                const ssize_t flen  = af->samples();
                 size_t channels     = lsp_min(af->channels(), meta::impulse_reverb_metadata::TRACKS_MAX);
 
                 // Buffer is present, file is present, check boundaries
@@ -1194,6 +1225,7 @@ namespace lsp
 
                 // Commit sample to the processed list
                 lsp::swap(f->pProcessed, s);
+                f->fDuration        = dspu::samples_to_seconds(fSampleRate, flen);
             }
 
             // Randomize phase of the convolver
@@ -1335,19 +1367,22 @@ namespace lsp
                         v->writev("vThumbs", af->vThumbs, meta::impulse_reverb_metadata::TRACKS_MAX);
 
                         v->write("fNorm", af->fNorm);
-                        v->write("bRender", af->bRender);
                         v->write("nStatus", af->nStatus);
+                        v->write("bRender", af->bRender);
                         v->write("bSync", af->bSync);
+                        v->write("bReverse", af->bReverse);
 
+                        v->write("fPitch", af->fPitch);
                         v->write("fHeadCut", af->fHeadCut);
                         v->write("fTailCut", af->fTailCut);
                         v->write("fFadeIn", af->fFadeIn);
                         v->write("fFadeOut", af->fFadeOut);
-                        v->write("bReverse", af->bReverse);
+                        v->write("fDuration", af->fDuration);
 
                         v->write_object("pLoader", &af->sLoader);
 
                         v->write("pFile", af->pFile);
+                        v->write("pPitch", af->pPitch);
                         v->write("pHeadCut", af->pHeadCut);
                         v->write("pTailCut", af->pTailCut);
                         v->write("pFadeIn", af->pFadeIn);

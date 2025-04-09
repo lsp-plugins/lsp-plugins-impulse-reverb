@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2021 Linux Studio Plugins Project <https://lsp-plug.in/>
- *           (C) 2021 Vladimir Sadovnikov <sadko4u@gmail.com>
+ * Copyright (C) 2025 Linux Studio Plugins Project <https://lsp-plug.in/>
+ *           (C) 2025 Vladimir Sadovnikov <sadko4u@gmail.com>
  *
  * This file is part of lsp-plugins-impulse-reverb
  * Created on: 3 авг. 2021 г.
@@ -49,6 +49,11 @@ namespace lsp
             static constexpr size_t CONVOLVERS              = 4;        // Number of IR convolvers
 
             static constexpr size_t FFT_RANK_MIN            = 9;        // Minimum FFT rank
+
+            static constexpr float FILE_PITCH_MIN           = -24.0f;   // Minimum pitch (st)
+            static constexpr float FILE_PITCH_MAX           = 24.0f;    // Maximum pitch (st)
+            static constexpr float FILE_PITCH_DFL           = 0.0f;     // Pitch (st)
+            static constexpr float FILE_PITCH_STEP          = 0.01f;    // Pitch step (st)
 
             static constexpr float LCF_MIN                  = 10.0f;
             static constexpr float LCF_MAX                  = 1000.0f;
