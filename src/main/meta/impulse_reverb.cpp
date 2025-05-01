@@ -149,7 +149,7 @@ namespace lsp
             SWITCH("wpp", "Wet post-process", 0),    \
             SWITCH("eqv", "Equalizer visibility", 0),    \
             COMBO("lcm", "Low-cut mode", 0, filter_slope),      \
-            LOG_CONTROL("lcf", "Low-cut frequency", U_HZ, impulse_reverb_metadata::LCF),   \
+            LOG_CONTROL("lcf", "Low-cut frequency", "LCF freq", U_HZ, impulse_reverb_metadata::LCF),   \
             IR_EQ_BAND(0, "50"), \
             IR_EQ_BAND(1, "107"), \
             IR_EQ_BAND(2, "227"), \
@@ -159,7 +159,7 @@ namespace lsp
             IR_EQ_BAND(6, "4.7 k"), \
             IR_EQ_BAND(7, "10 k"), \
             COMBO("hcm", "High-cut mode", 0, filter_slope),      \
-            LOG_CONTROL("hcf", "High-cut frequency", U_HZ, impulse_reverb_metadata::HCF)
+            LOG_CONTROL("hcf", "High-cut frequency", "HCF freq", U_HZ, impulse_reverb_metadata::HCF)
 
         static const port_t impulse_reverb_mono_ports[] =
         {
