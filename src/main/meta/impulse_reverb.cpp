@@ -108,7 +108,7 @@ namespace lsp
             BYPASS, \
             COMBO("fsel", "File selector", "File selector", 0, ir_file_select), \
             COMBO("fft", "FFT size", "FFT size", impulse_reverb_metadata::FFT_RANK_DEFAULT, ir_fft_rank), \
-            CONTROL("pd", "Pre-delay", U_MSEC, impulse_reverb_metadata::PREDELAY), \
+            CONTROL("pd", "Pre-delay", "Pre-delay", U_MSEC, impulse_reverb_metadata::PREDELAY), \
             pan, \
             DRY_GAIN(1.0f), \
             WET_GAIN(1.0f), \
@@ -117,11 +117,11 @@ namespace lsp
 
         #define IR_SAMPLE_FILE(id, label)   \
             PATH("ifn" id, "Impulse file" label),    \
-            CONTROL("psh" id, "File pitch" label, U_SEMITONES, impulse_reverb_metadata::FILE_PITCH), \
-            CONTROL("ihc" id, "Head cut" label, U_MSEC, impulse_reverb_metadata::CONV_LENGTH), \
-            CONTROL("itc" id, "Tail cut" label, U_MSEC, impulse_reverb_metadata::CONV_LENGTH), \
-            CONTROL("ifi" id, "Fade in" label, U_MSEC, impulse_reverb_metadata::CONV_LENGTH), \
-            CONTROL("ifo" id, "Fade out" label, U_MSEC, impulse_reverb_metadata::CONV_LENGTH), \
+            CONTROL("psh" id, "File pitch" label, NULL, U_SEMITONES, impulse_reverb_metadata::FILE_PITCH), \
+            CONTROL("ihc" id, "Head cut" label, NULL, U_MSEC, impulse_reverb_metadata::CONV_LENGTH), \
+            CONTROL("itc" id, "Tail cut" label, NULL, U_MSEC, impulse_reverb_metadata::CONV_LENGTH), \
+            CONTROL("ifi" id, "Fade in" label, NULL, U_MSEC, impulse_reverb_metadata::CONV_LENGTH), \
+            CONTROL("ifo" id, "Fade out" label, NULL, U_MSEC, impulse_reverb_metadata::CONV_LENGTH), \
             TRIGGER("ils" id, "Impulse listen preview" label, "Listen" label), \
             TRIGGER("ilc" id, "Impulse stop preview" label, "Stop" label), \
             SWITCH("irv" id, "Impulse reverse" label, "Reverse" label, 0.0f), \
@@ -135,7 +135,7 @@ namespace lsp
             AMP_GAIN100("mk" id, "Makeup gain" label, 1.0f), \
             SWITCH("cam" id, "Channel mute" label, "Mute" label, 0.0f), \
             BLINK("ca" id, "Channel activity" label), \
-            CONTROL("pd" id, "Channel pre-delay" label, U_MSEC, impulse_reverb_metadata::PREDELAY), \
+            CONTROL("pd" id, "Channel pre-delay" label, "Pre-delay" label, U_MSEC, impulse_reverb_metadata::PREDELAY), \
             PAN_CTL("com" id, "Channel Left/Right output mix" label, mix)
 
         #define IR_CONVOLVER_STEREO(id, label, file, track, in_mix, out_mix) \
@@ -143,7 +143,7 @@ namespace lsp
             IR_CONVOLVER_MONO(id, label, file, track, out_mix)
 
         #define IR_EQ_BAND(id, freq)    \
-            CONTROL("eq_" #id, "Band " freq "Hz gain", U_GAIN_AMP, impulse_reverb_metadata::BA)
+            CONTROL("eq_" #id, "Band " freq "Hz gain", "Eq " freq, U_GAIN_AMP, impulse_reverb_metadata::BA)
 
         #define IR_EQUALIZER    \
             SWITCH("wpp", "Wet post-process", "Wet postproc", 0),    \
