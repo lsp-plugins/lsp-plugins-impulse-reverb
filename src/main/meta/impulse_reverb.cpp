@@ -98,11 +98,11 @@ namespace lsp
         };
 
         #define IR_PAN_MONO \
-            PAN_CTL("p", "Panorama", 0.0f)
+            PAN_CTL("p", "Panorama", "Pan", 0.0f)
 
         #define IR_PAN_STEREO \
-            PAN_CTL("pl", "Left channel panorama", -100.0f), \
-            PAN_CTL("pr", "Right channel panorama", 100.0f)
+            PAN_CTL("pl", "Left channel panorama", "Pan L", -100.0f), \
+            PAN_CTL("pr", "Right channel panorama", "Pan R", 100.0f)
 
         #define IR_COMMON(pan) \
             BYPASS, \
@@ -132,14 +132,14 @@ namespace lsp
         #define IR_CONVOLVER_MONO(id, label, file, track, mix) \
             COMBO("csf" id, "Channel source file" label, "Source" label, file, ir_files), \
             COMBO("cst" id, "Channel source track" label, "Track" label, track, ir_tracks), \
-            AMP_GAIN100("mk" id, "Makeup gain" label, 1.0f), \
+            AMP_GAIN100("mk" id, "Makeup gain" label, "Makeup" label, 1.0f), \
             SWITCH("cam" id, "Channel mute" label, "Mute" label, 0.0f), \
             BLINK("ca" id, "Channel activity" label), \
             CONTROL("pd" id, "Channel pre-delay" label, "Pre-delay" label, U_MSEC, impulse_reverb_metadata::PREDELAY), \
-            PAN_CTL("com" id, "Channel Left/Right output mix" label, mix)
+            PAN_CTL("com" id, "Channel Left/Right output mix" label, "Out pan" label, mix)
 
         #define IR_CONVOLVER_STEREO(id, label, file, track, in_mix, out_mix) \
-            PAN_CTL("cim" id, "Left/Right input mix" label, in_mix), \
+            PAN_CTL("cim" id, "Left/Right input mix" label, "In pan" label, in_mix), \
             IR_CONVOLVER_MONO(id, label, file, track, out_mix)
 
         #define IR_EQ_BAND(id, freq)    \
