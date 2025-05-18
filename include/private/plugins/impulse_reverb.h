@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2024 Linux Studio Plugins Project <https://lsp-plug.in/>
- *           (C) 2024 Vladimir Sadovnikov <sadko4u@gmail.com>
+ * Copyright (C) 2025 Linux Studio Plugins Project <https://lsp-plug.in/>
+ *           (C) 2025 Vladimir Sadovnikov <sadko4u@gmail.com>
  *
  * This file is part of lsp-plugins-impulse-reverb
  * Created on: 3 авг. 2021 г.
@@ -103,19 +103,22 @@ namespace lsp
                     dspu::Sample       *pProcessed;     // Processed audio file for sampler
                     float              *vThumbs[meta::impulse_reverb_metadata::TRACKS_MAX];           // Thumbnails
                     float               fNorm;          // Norming factor
-                    bool                bRender;        // Flag that indicates that file needs rendering
                     status_t            nStatus;
+                    bool                bRender;        // Flag that indicates that file needs rendering
                     bool                bSync;          // Synchronize file
+                    bool                bReverse;
 
+                    float               fPitch;         // Pitch amount
                     float               fHeadCut;
                     float               fTailCut;
                     float               fFadeIn;
                     float               fFadeOut;
-                    bool                bReverse;
+                    float               fDuration;      // Actual audio file duration
 
                     IRLoader            sLoader;        // Audio file loader task
 
                     plug::IPort        *pFile;          // Port that contains file name
+                    plug::IPort        *pPitch;         // Pitch amount
                     plug::IPort        *pHeadCut;
                     plug::IPort        *pTailCut;
                     plug::IPort        *pFadeIn;

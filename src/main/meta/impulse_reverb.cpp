@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2024 Linux Studio Plugins Project <https://lsp-plug.in/>
- *           (C) 2024 Vladimir Sadovnikov <sadko4u@gmail.com>
+ * Copyright (C) 2025 Linux Studio Plugins Project <https://lsp-plug.in/>
+ *           (C) 2025 Vladimir Sadovnikov <sadko4u@gmail.com>
  *
  * This file is part of lsp-plugins-impulse-reverb
  * Created on: 3 авг. 2021 г.
@@ -27,7 +27,7 @@
 
 #define LSP_PLUGINS_IMPULSE_REVERB_VERSION_MAJOR       1
 #define LSP_PLUGINS_IMPULSE_REVERB_VERSION_MINOR       0
-#define LSP_PLUGINS_IMPULSE_REVERB_VERSION_MICRO       25
+#define LSP_PLUGINS_IMPULSE_REVERB_VERSION_MICRO       26
 
 #define LSP_PLUGINS_IMPULSE_REVERB_VERSION  \
     LSP_MODULE_VERSION( \
@@ -98,17 +98,17 @@ namespace lsp
         };
 
         #define IR_PAN_MONO \
-            PAN_CTL("p", "Panorama", 0.0f)
+            PAN_CTL("p", "Panorama", "Pan", 0.0f)
 
         #define IR_PAN_STEREO \
-            PAN_CTL("pl", "Left channel panorama", -100.0f), \
-            PAN_CTL("pr", "Right channel panorama", 100.0f)
+            PAN_CTL("pl", "Left channel panorama", "Pan L", -100.0f), \
+            PAN_CTL("pr", "Right channel panorama", "Pan R", 100.0f)
 
         #define IR_COMMON(pan) \
             BYPASS, \
-            COMBO("fsel", "File selector", 0, ir_file_select), \
-            COMBO("fft", "FFT size", impulse_reverb_metadata::FFT_RANK_DEFAULT, ir_fft_rank), \
-            CONTROL("pd", "Pre-delay", U_MSEC, impulse_reverb_metadata::PREDELAY), \
+            COMBO("fsel", "File selector", "File selector", 0, ir_file_select), \
+            COMBO("fft", "FFT size", "FFT size", impulse_reverb_metadata::FFT_RANK_DEFAULT, ir_fft_rank), \
+            CONTROL("pd", "Pre-delay", "Pre-delay", U_MSEC, impulse_reverb_metadata::PREDELAY), \
             pan, \
             DRY_GAIN(1.0f), \
             WET_GAIN(1.0f), \
@@ -117,38 +117,39 @@ namespace lsp
 
         #define IR_SAMPLE_FILE(id, label)   \
             PATH("ifn" id, "Impulse file" label),    \
-            CONTROL("ihc" id, "Head cut" label, U_MSEC, impulse_reverb_metadata::CONV_LENGTH), \
-            CONTROL("itc" id, "Tail cut" label, U_MSEC, impulse_reverb_metadata::CONV_LENGTH), \
-            CONTROL("ifi" id, "Fade in" label, U_MSEC, impulse_reverb_metadata::CONV_LENGTH), \
-            CONTROL("ifo" id, "Fade out" label, U_MSEC, impulse_reverb_metadata::CONV_LENGTH), \
-            TRIGGER("ils" id, "Impulse listen preview" label), \
-            TRIGGER("ilc" id, "Impulse stop preview" label), \
-            SWITCH("irv" id, "Impulse reverse" label, 0.0f), \
+            CONTROL("psh" id, "File pitch" label, NULL, U_SEMITONES, impulse_reverb_metadata::FILE_PITCH), \
+            CONTROL("ihc" id, "Head cut" label, NULL, U_MSEC, impulse_reverb_metadata::CONV_LENGTH), \
+            CONTROL("itc" id, "Tail cut" label, NULL, U_MSEC, impulse_reverb_metadata::CONV_LENGTH), \
+            CONTROL("ifi" id, "Fade in" label, NULL, U_MSEC, impulse_reverb_metadata::CONV_LENGTH), \
+            CONTROL("ifo" id, "Fade out" label, NULL, U_MSEC, impulse_reverb_metadata::CONV_LENGTH), \
+            TRIGGER("ils" id, "Impulse listen preview" label, "Listen" label), \
+            TRIGGER("ilc" id, "Impulse stop preview" label, "Stop" label), \
+            SWITCH("irv" id, "Impulse reverse" label, "Reverse" label, 0.0f), \
             STATUS("ifs" id, "Load status" label), \
             METER("ifl" id, "Impulse length" label, U_MSEC, impulse_reverb_metadata::CONV_LENGTH), \
             MESH("ifd" id, "Impulse file contents" label, impulse_reverb_metadata::TRACKS_MAX, impulse_reverb_metadata::MESH_SIZE)
 
         #define IR_CONVOLVER_MONO(id, label, file, track, mix) \
-            COMBO("csf" id, "Channel source file" label, file, ir_files), \
-            COMBO("cst" id, "Channel source track" label, track, ir_tracks), \
-            AMP_GAIN100("mk" id, "Makeup gain" label, 1.0f), \
-            SWITCH("cam" id, "Channel mute" label, 0.0f), \
+            COMBO("csf" id, "Channel source file" label, "Source" label, file, ir_files), \
+            COMBO("cst" id, "Channel source track" label, "Track" label, track, ir_tracks), \
+            AMP_GAIN100("mk" id, "Makeup gain" label, "Makeup" label, 1.0f), \
+            SWITCH("cam" id, "Channel mute" label, "Mute" label, 0.0f), \
             BLINK("ca" id, "Channel activity" label), \
-            CONTROL("pd" id, "Channel pre-delay" label, U_MSEC, impulse_reverb_metadata::PREDELAY), \
-            PAN_CTL("com" id, "Channel Left/Right output mix" label, mix)
+            CONTROL("pd" id, "Channel pre-delay" label, "Pre-delay" label, U_MSEC, impulse_reverb_metadata::PREDELAY), \
+            PAN_CTL("com" id, "Channel Left/Right output mix" label, "Out pan" label, mix)
 
         #define IR_CONVOLVER_STEREO(id, label, file, track, in_mix, out_mix) \
-            PAN_CTL("cim" id, "Left/Right input mix" label, in_mix), \
+            PAN_CTL("cim" id, "Left/Right input mix" label, "In pan" label, in_mix), \
             IR_CONVOLVER_MONO(id, label, file, track, out_mix)
 
         #define IR_EQ_BAND(id, freq)    \
-            CONTROL("eq_" #id, "Band " freq "Hz gain", U_GAIN_AMP, impulse_reverb_metadata::BA)
+            CONTROL("eq_" #id, "Band " freq "Hz gain", "Eq " freq, U_GAIN_AMP, impulse_reverb_metadata::BA)
 
         #define IR_EQUALIZER    \
-            SWITCH("wpp", "Wet post-process", 0),    \
-            SWITCH("eqv", "Equalizer visibility", 0),    \
-            COMBO("lcm", "Low-cut mode", 0, filter_slope),      \
-            LOG_CONTROL("lcf", "Low-cut frequency", U_HZ, impulse_reverb_metadata::LCF),   \
+            SWITCH("wpp", "Wet post-process", "Wet postproc", 0),    \
+            SWITCH("eqv", "Equalizer visibility", "Show Eq", 0),    \
+            COMBO("lcm", "Low-cut mode", "LC mode", 0, filter_slope),      \
+            LOG_CONTROL("lcf", "Low-cut frequency", "LC freq", U_HZ, impulse_reverb_metadata::LCF),   \
             IR_EQ_BAND(0, "50"), \
             IR_EQ_BAND(1, "107"), \
             IR_EQ_BAND(2, "227"), \
@@ -157,8 +158,8 @@ namespace lsp
             IR_EQ_BAND(5, "2.2 k"), \
             IR_EQ_BAND(6, "4.7 k"), \
             IR_EQ_BAND(7, "10 k"), \
-            COMBO("hcm", "High-cut mode", 0, filter_slope),      \
-            LOG_CONTROL("hcf", "High-cut frequency", U_HZ, impulse_reverb_metadata::HCF)
+            COMBO("hcm", "High-cut mode", "HC mode", 0, filter_slope),      \
+            LOG_CONTROL("hcf", "High-cut frequency", "HC freq", U_HZ, impulse_reverb_metadata::HCF)
 
         static const port_t impulse_reverb_mono_ports[] =
         {
