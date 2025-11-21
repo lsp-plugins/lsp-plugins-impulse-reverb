@@ -3,7 +3,7 @@
 *******************************************************************************
 
 === 1.0.30 ===
-
+* Offline tasks are optimized for better floating-point computing.
 
 === 1.0.29 ===
 * Updated build scripts and dependencies.
