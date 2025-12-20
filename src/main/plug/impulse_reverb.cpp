@@ -78,6 +78,10 @@ namespace lsp
 
         status_t impulse_reverb::IRLoader::run()
         {
+            dsp::context_t ctx;
+            dsp::start(&ctx);
+            lsp_finally { dsp::finish(&ctx); };
+
             return pCore->load(pDescr);
         }
 
@@ -100,6 +104,10 @@ namespace lsp
 
         status_t impulse_reverb::IRConfigurator::run()
         {
+            dsp::context_t ctx;
+            dsp::start(&ctx);
+            lsp_finally { dsp::finish(&ctx); };
+
             return pCore->reconfigure();
         }
 
