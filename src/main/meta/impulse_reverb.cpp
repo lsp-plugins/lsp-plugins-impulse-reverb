@@ -248,7 +248,8 @@ namespace lsp
             "plugins/convolution/impulse_reverb/mono.xml",
             NULL,
             mono_to_stereo_plugin_port_groups,
-            &impulse_reverb_bundle
+            &impulse_reverb_bundle,
+            2
         };
         LSP_REGISTER_METADATA(impulse_reverb_mono);
 
@@ -279,7 +280,8 @@ namespace lsp
             "plugins/convolution/impulse_reverb/stereo.xml",
             NULL,
             stereo_plugin_port_groups,
-            &impulse_reverb_bundle
+            &impulse_reverb_bundle,
+            1
         };
         LSP_REGISTER_METADATA(impulse_reverb_stereo);
 
