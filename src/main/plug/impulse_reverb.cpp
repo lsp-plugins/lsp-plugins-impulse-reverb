@@ -1106,12 +1106,14 @@ namespace lsp
                 return STATUS_NO_MEM;
             lsp_finally { destroy_sample(af); };
 
+            lsp_trace("Loading file '%s'...", path);
+
             // Try to load file
             float conv_length_max_seconds = meta::impulse_reverb_metadata::CONV_LENGTH_MAX * 0.001f;
             status_t status = af->load(fname, conv_length_max_seconds);
             if (status != STATUS_OK)
             {
-                lsp_trace("load failed: status=%d (%s)", status, get_status(status));
+                lsp_trace("Load file '%s' failed: status=%d (%s)", path, status, get_status(status));
                 return status;
             }
 
