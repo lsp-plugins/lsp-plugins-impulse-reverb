@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2025 Linux Studio Plugins Project <https://lsp-plug.in/>
- *           (C) 2025 Vladimir Sadovnikov <sadko4u@gmail.com>
+ * Copyright (C) 2026 Linux Studio Plugins Project <https://lsp-plug.in/>
+ *           (C) 2026 Vladimir Sadovnikov <sadko4u@gmail.com>
  *
  * This file is part of lsp-plugins-impulse-reverb
  * Created on: 3 авг. 2021 г.
@@ -20,6 +20,7 @@
  */
 
 #include <lsp-plug.in/plug-fw/meta/ports.h>
+#include <lsp-plug.in/plug-fw/meta/registry.h>
 #include <lsp-plug.in/shared/meta/developers.h>
 #include <lsp-plug.in/common/status.h>
 
@@ -27,7 +28,7 @@
 
 #define LSP_PLUGINS_IMPULSE_REVERB_VERSION_MAJOR       1
 #define LSP_PLUGINS_IMPULSE_REVERB_VERSION_MINOR       0
-#define LSP_PLUGINS_IMPULSE_REVERB_VERSION_MICRO       30
+#define LSP_PLUGINS_IMPULSE_REVERB_VERSION_MICRO       31
 
 #define LSP_PLUGINS_IMPULSE_REVERB_VERSION  \
     LSP_MODULE_VERSION( \
@@ -40,6 +41,10 @@ namespace lsp
 {
     namespace meta
     {
+        // Lisf of different revisions for adding controls
+        #define REV_0       0
+        #define REV_1       1
+
         //-------------------------------------------------------------------------
         // Impulse reverb
 
@@ -142,31 +147,35 @@ namespace lsp
             PAN_CTL("cim" id, "Left/Right input mix" label, "In pan" label, in_mix), \
             IR_CONVOLVER_MONO(id, label, file, track, out_mix)
 
-        #define IR_EQ_BAND(id, freq)    \
-            CONTROL("eq_" #id, "Band " freq "Hz gain", "Eq " freq, U_GAIN_AMP, impulse_reverb_metadata::BA)
+        #define IR_EQ_BAND(rev, id, name, alias, freq)    \
+            ADDON_CONTROL(rev, "eq_" id, "Band " name freq "Hz gain", "Eq " alias freq, U_GAIN_AMP, impulse_reverb_metadata::BA)
 
-        #define IR_EQUALIZER    \
+        #define IR_EQ_BANDS(rev, id, name, alias) \
+            ADDON_COMBO(rev, "lcm" id, "Low-cut mode" name, "LC mode" alias, 0, filter_slope),      \
+            ADDON_LOG_CONTROL(rev, "lcf" id, "Low-cut frequency" name, "LC freq" alias, U_HZ, impulse_reverb_metadata::LCF),   \
+            IR_EQ_BAND(rev, "0" id, name, alias, "50"), \
+            IR_EQ_BAND(rev, "1" id, name, alias, "107"), \
+            IR_EQ_BAND(rev, "2" id, name, alias, "227"), \
+            IR_EQ_BAND(rev, "3" id, name, alias, "484"), \
+            IR_EQ_BAND(rev, "4" id, name, alias, "1 k"), \
+            IR_EQ_BAND(rev, "5" id, name, alias, "2.2 k"), \
+            IR_EQ_BAND(rev, "6" id, name, alias, "4.7 k"), \
+            IR_EQ_BAND(rev, "7" id, name, alias, "10 k"), \
+            ADDON_COMBO(rev, "hcm" id, "High-cut mode" name, "HC mode" alias, 0, filter_slope),      \
+            ADDON_LOG_CONTROL(rev, "hcf" id, "High-cut frequency" name, "HC freq" alias, U_HZ, impulse_reverb_metadata::HCF)
+
+        #define IR_EQUALIZER \
             SWITCH("wpp", "Wet post-process", "Wet postproc", 0),    \
             SWITCH("eqv", "Equalizer visibility", "Show Eq", 0),    \
-            COMBO("lcm", "Low-cut mode", "LC mode", 0, filter_slope),      \
-            LOG_CONTROL("lcf", "Low-cut frequency", "LC freq", U_HZ, impulse_reverb_metadata::LCF),   \
-            IR_EQ_BAND(0, "50"), \
-            IR_EQ_BAND(1, "107"), \
-            IR_EQ_BAND(2, "227"), \
-            IR_EQ_BAND(3, "484"), \
-            IR_EQ_BAND(4, "1 k"), \
-            IR_EQ_BAND(5, "2.2 k"), \
-            IR_EQ_BAND(6, "4.7 k"), \
-            IR_EQ_BAND(7, "10 k"), \
-            COMBO("hcm", "High-cut mode", "HC mode", 0, filter_slope),      \
-            LOG_CONTROL("hcf", "High-cut frequency", "HC freq", U_HZ, impulse_reverb_metadata::HCF)
+            ADDON_SWITCH(REV_1, "ssplit", "Stereo equalizer split", "Eq split", 0.0f), \
+            IR_EQ_BANDS(REV_0, "", "", ""), \
+            IR_EQ_BANDS(REV_1, "r", "Right ", "R ")
 
         static const port_t impulse_reverb_mono_ports[] =
         {
             // Input audio ports
             AUDIO_INPUT_MONO,
-            AUDIO_OUTPUT_LEFT,
-            AUDIO_OUTPUT_RIGHT,
+            AUDIO_OUTPUT_STEREO,
             IR_COMMON(IR_PAN_MONO),
 
             // Input controls
@@ -244,11 +253,13 @@ namespace lsp
             clap_features_mono,
             E_DUMP_STATE | E_FILE_PREVIEW,
             impulse_reverb_mono_ports,
-            "convolution/impulse_reverb/mono.xml",
+            "plugins/convolution/impulse_reverb/mono.xml",
             NULL,
             mono_to_stereo_plugin_port_groups,
-            &impulse_reverb_bundle
+            &impulse_reverb_bundle,
+            2
         };
+        LSP_REGISTER_METADATA(impulse_reverb_mono);
 
         const meta::plugin_t impulse_reverb_stereo =
         {
@@ -274,10 +285,13 @@ namespace lsp
             clap_features_stereo,
             E_DUMP_STATE | E_FILE_PREVIEW,
             impulse_reverb_stereo_ports,
-            "convolution/impulse_reverb/stereo.xml",
+            "plugins/convolution/impulse_reverb/stereo.xml",
             NULL,
             stereo_plugin_port_groups,
-            &impulse_reverb_bundle
+            &impulse_reverb_bundle,
+            1
         };
+        LSP_REGISTER_METADATA(impulse_reverb_stereo);
+
     } // namespace meta
 } // namespace lsp

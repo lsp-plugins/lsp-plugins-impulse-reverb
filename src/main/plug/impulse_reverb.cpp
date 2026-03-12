@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2025 Linux Studio Plugins Project <https://lsp-plug.in/>
- *           (C) 2025 Vladimir Sadovnikov <sadko4u@gmail.com>
+ * Copyright (C) 2026 Linux Studio Plugins Project <https://lsp-plug.in/>
+ *           (C) 2026 Vladimir Sadovnikov <sadko4u@gmail.com>
  *
  * This file is part of lsp-plugins-impulse-reverb
  * Created on: 3 авг. 2021 г.
@@ -172,7 +172,6 @@ namespace lsp
                 c->fDryPan[1]   = 0.0f;
 
                 c->pOut         = NULL;
-                c->pWetEq       = NULL;
                 c->pLowCut      = NULL;
                 c->pLowFreq     = NULL;
                 c->pHighCut     = NULL;
@@ -250,6 +249,8 @@ namespace lsp
             pDryWet         = NULL;
             pOutGain        = NULL;
             pPredelay       = NULL;
+            pWetEq          = NULL;
+            pWetSplit       = NULL;
 
             pData           = NULL;
             pExecutor       = NULL;
@@ -472,7 +473,6 @@ namespace lsp
 
                 c->pOut         = NULL;
 
-                c->pWetEq       = NULL;
                 c->pLowCut      = NULL;
                 c->pLowFreq     = NULL;
                 c->pHighCut     = NULL;
@@ -546,13 +546,14 @@ namespace lsp
 
             // Bind wet processing ports
             lsp_trace("Binding wet processing ports");
-            size_t port         = port_id;
+            BIND_PORT(pWetEq);
+            SKIP_PORT("Equalizer visibility"); // Skip equalizer visibility port
+            BIND_PORT(pWetSplit);
+
             for (size_t i=0; i<2; ++i)
             {
                 channel_t *c        = &vChannels[i];
 
-                BIND_PORT(c->pWetEq);
-                SKIP_PORT("Equalizer visibility"); // Skip equalizer visibility port
                 BIND_PORT(c->pLowCut);
                 BIND_PORT(c->pLowFreq);
 
@@ -561,8 +562,6 @@ namespace lsp
 
                 BIND_PORT(c->pHighCut);
                 BIND_PORT(c->pHighFreq);
-
-                port_id             = port;
             }
         }
 
@@ -636,16 +635,19 @@ namespace lsp
                 vChannels[1].fDryPan[1] = (100.0f + pan_r) * 0.005f * dry_gain;
             }
 
+            const dspu::equalizer_mode_t eq_mode    = (pWetEq->value() >= 0.5f) ? dspu::EQM_IIR : dspu::EQM_BYPASS;
+            const bool ssplit                       = pWetSplit->value() >= 0.5f;
+
             // Adjust channel setup
             for (size_t i=0; i<2; ++i)
             {
-                channel_t *c        = &vChannels[i];
+                channel_t * const c             = &vChannels[i];
+                channel_t * const sc            = (ssplit) ? &vChannels[i] : &vChannels[0];     // The channel to take settings from
                 c->sBypass.set_bypass(bypass);
                 c->sPlayer.set_gain(out_gain);
 
                 // Update equalization parameters
-                dspu::Equalizer *eq             = &c->sEqualizer;
-                dspu::equalizer_mode_t eq_mode  = (c->pWetEq->value() >= 0.5f) ? dspu::EQM_IIR : dspu::EQM_BYPASS;
+                dspu::Equalizer * const eq      = &c->sEqualizer;
                 eq->set_mode(eq_mode);
 
                 if (eq_mode != dspu::EQM_BYPASS)
@@ -675,7 +677,7 @@ namespace lsp
                             fp.nType        = dspu::FLT_MT_LRX_LADDERPASS;
                         }
 
-                        fp.fGain        = c->pFreqGain[band]->value();
+                        fp.fGain        = sc->pFreqGain[band]->value();
                         fp.nSlope       = 2;
                         fp.fQuality     = 0.0f;
 
@@ -684,9 +686,9 @@ namespace lsp
                     }
 
                     // Setup hi-pass filter
-                    size_t hp_slope = c->pLowCut->value() * 2;
+                    size_t hp_slope = sc->pLowCut->value() * 2;
                     fp.nType        = (hp_slope > 0) ? dspu::FLT_BT_BWC_HIPASS : dspu::FLT_NONE;
-                    fp.fFreq        = c->pLowFreq->value();
+                    fp.fFreq        = sc->pLowFreq->value();
                     fp.fFreq2       = fp.fFreq;
                     fp.fGain        = 1.0f;
                     fp.nSlope       = hp_slope;
@@ -694,9 +696,9 @@ namespace lsp
                     eq->set_params(band++, &fp);
 
                     // Setup low-pass filter
-                    size_t lp_slope = c->pHighCut->value() * 2;
+                    size_t lp_slope = sc->pHighCut->value() * 2;
                     fp.nType        = (lp_slope > 0) ? dspu::FLT_BT_BWC_LOPASS : dspu::FLT_NONE;
-                    fp.fFreq        = c->pHighFreq->value();
+                    fp.fFreq        = sc->pHighFreq->value();
                     fp.fFreq2       = fp.fFreq;
                     fp.fGain        = 1.0f;
                     fp.nSlope       = lp_slope;
@@ -1104,12 +1106,14 @@ namespace lsp
                 return STATUS_NO_MEM;
             lsp_finally { destroy_sample(af); };
 
+            lsp_trace("Loading file '%s'...", path);
+
             // Try to load file
             float conv_length_max_seconds = meta::impulse_reverb_metadata::CONV_LENGTH_MAX * 0.001f;
             status_t status = af->load(fname, conv_length_max_seconds);
             if (status != STATUS_OK)
             {
-                lsp_trace("load failed: status=%d (%s)", status, get_status(status));
+                lsp_trace("Load file '%s' failed: status=%d (%s)", path, status, get_status(status));
                 return status;
             }
 
@@ -1311,7 +1315,6 @@ namespace lsp
 
                         v->write("pOut", c->pOut);
 
-                        v->write("pWetEq", c->pWetEq);
                         v->write("pLowCut", c->pLowCut);
                         v->write("pLowFreq", c->pLowFreq);
                         v->write("pHighCut", c->pHighCut);
@@ -1407,6 +1410,8 @@ namespace lsp
             v->write("pDryWet", pDryWet);
             v->write("pOutGain", pOutGain);
             v->write("pPredelay", pPredelay);
+            v->write("pWetEq", pWetEq);
+            v->write("pWetSplit", pWetSplit);
 
             v->write("pData", pData);
             v->write("pExecutor", pExecutor);
