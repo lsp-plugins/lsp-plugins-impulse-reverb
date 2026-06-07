@@ -179,14 +179,14 @@ namespace lsp
             IR_COMMON(IR_PAN_MONO),
 
             // Input controls
-            IR_SAMPLE_FILE("0", " 0"),
-            IR_SAMPLE_FILE("1", " 1"),
-            IR_SAMPLE_FILE("2", " 2"),
-            IR_SAMPLE_FILE("3", " 3"),
-            IR_CONVOLVER_MONO("0", " 0", 1, 0, -100.0f),
-            IR_CONVOLVER_MONO("1", " 1", 1, 1, +100.0f),
-            IR_CONVOLVER_MONO("2", " 2", 2, 0, -100.0f),
-            IR_CONVOLVER_MONO("3", " 3", 2, 1, +100.0f),
+            IR_SAMPLE_FILE("0", " 1"),
+            IR_SAMPLE_FILE("1", " 2"),
+            IR_SAMPLE_FILE("2", " 3"),
+            IR_SAMPLE_FILE("3", " 4"),
+            IR_CONVOLVER_MONO("0", " 1", 1, 0, -100.0f),
+            IR_CONVOLVER_MONO("1", " 2", 1, 1, +100.0f),
+            IR_CONVOLVER_MONO("2", " 3", 2, 0, -100.0f),
+            IR_CONVOLVER_MONO("3", " 4", 2, 1, +100.0f),
 
             // Impulse response equalizer
             IR_EQUALIZER,
@@ -201,14 +201,14 @@ namespace lsp
             IR_COMMON(IR_PAN_STEREO),
 
             // Input controls
-            IR_SAMPLE_FILE("0", " 0"),
-            IR_SAMPLE_FILE("1", " 1"),
-            IR_SAMPLE_FILE("2", " 2"),
-            IR_SAMPLE_FILE("3", " 3"),
-            IR_CONVOLVER_STEREO("0", " 0", 1, 0, -100.0f, -100.0f),
-            IR_CONVOLVER_STEREO("1", " 1", 1, 1, -100.0f, +100.0f),
-            IR_CONVOLVER_STEREO("2", " 2", 2, 0, +100.0f, -100.0f),
-            IR_CONVOLVER_STEREO("3", " 3", 2, 1, +100.0f, +100.0f),
+            IR_SAMPLE_FILE("0", " 1"),
+            IR_SAMPLE_FILE("1", " 2"),
+            IR_SAMPLE_FILE("2", " 3"),
+            IR_SAMPLE_FILE("3", " 4"),
+            IR_CONVOLVER_STEREO("0", " 1", 1, 0, -100.0f, -100.0f),
+            IR_CONVOLVER_STEREO("1", " 2", 1, 1, -100.0f, +100.0f),
+            IR_CONVOLVER_STEREO("2", " 3", 2, 0, +100.0f, -100.0f),
+            IR_CONVOLVER_STEREO("3", " 4", 2, 1, +100.0f, +100.0f),
 
             // Impulse response equalizer
             IR_EQUALIZER,
