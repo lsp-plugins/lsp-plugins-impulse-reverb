@@ -2,6 +2,12 @@
 * RECENT CHANGES
 *******************************************************************************
 
+=== 1.0.33 ===
+* Re-numbered parameters labels in plugin's metadata to start counting from 1.
+* The auto-play and auto-load features in file navigator have been moved into separate
+  'UI Behavior' options.
+* Updated build scripts and dependencies.
+
 === 1.0.32 ===
 * Updated build scripts and dependencies.
 
