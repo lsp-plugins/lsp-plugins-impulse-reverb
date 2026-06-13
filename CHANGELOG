@@ -3,7 +3,7 @@
 *******************************************************************************
 
 === 1.0.34 ===
-
+* Updated build scripts and dependencies.
 
 === 1.0.33 ===
 * Re-numbered parameters labels in plugin's metadata to start counting from 1.
